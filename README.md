@@ -56,9 +56,11 @@ Three-layer verification (static: SAST, IaC, SCA · dynamic: DAST, API testing, 
 
 ---
 
-## Status
+## Documentation
 
-The framework is in active development. The specification document covers the full conceptual architecture, layer design, integration patterns, and governance model.
+The interactive framework page covers all four layers with worked examples, tables, and bilingual support (EN/PT).
+
+For the full specification — including implementation roadmap, governance metrics, calibration challenges, and the architect's transformed role — read [`framework.md`](./framework.md).
 
 Academic work derived from this framework is under review for publication and is not included in this repository.
 
@@ -66,5 +68,5 @@ Academic work derived from this framework is under review for publication and is
 
 ## Author
 
-**Yuri Braz** — Security Architect  
-[ybraz.com](https://ybraz.com) · [GitHub](https://github.com/ybraz)
+**Yuri Braz, CISSP, CRISC** — Security Architect  
+[LinkedIn](https://www.linkedin.com/in/yuri-braz/) · [GitHub](https://github.com/ybraz)
