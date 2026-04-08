@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Living Security Architecture · Yuri Braz</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    /* ─────────────── TOKENS ─────────────── */
+    :root {
+      --bg:       #060d1b;
+      --bg2:      #0b1527;
+      --bg3:      #101e35;
+      --bg4:      #152340;
+      --blue:     #2e9bff;
+      --blue-dim: rgba(46,155,255,.12);
+      --teal:     #00e5b3;
+      --teal-dim: rgba(0,229,179,.1);
+      --purple:   #a78bfa;
+      --purp-dim: rgba(167,139,250,.1);
+      --red:      #f87171;
+      --red-dim:  rgba(248,113,113,.1);
+      --orange:   #fb923c;
+      --text:     #e0e8f4;
+      --sub:      #8aa3c8;
+      --border:   rgba(46,155,255,.13);
+      --border2:  rgba(255,255,255,.07);
+      --r:        14px;
+      --r-sm:     8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; line-height: 1.7; }
+
+    /* ─── CANVAS ─── */
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .25; }
+
+    /* ─── PROGRESS ─── */
+    #prog { position: fixed; top: 60px; left: 0; height: 2px; background: linear-gradient(90deg, var(--blue), var(--teal)); z-index: 99; transition: width .1s linear; box-shadow: 0 0 8px rgba(46,155,255,.6); }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 60px; padding: 0 1.75rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(6,13,27,.92); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-brand { font-family: 'JetBrains Mono', monospace; font-size: .8rem; font-weight: 600; color: var(--blue); letter-spacing: .06em; }
+    .nav-brand span { color: var(--sub); font-weight: 400; }
+    .nav-links { display: flex; align-items: center; gap: .1rem; list-style: none; }
+    .nav-links a { color: var(--sub); text-decoration: none; font-size: .76rem; font-weight: 500; padding: .38rem .65rem; border-radius: 6px; transition: color .18s, background .18s; white-space: nowrap; }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+    .lang { display: flex; background: rgba(46,155,255,.07); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; margin-left: 1.25rem; flex-shrink: 0; }
+    .lang-btn { cursor: pointer; padding: .28rem .7rem; font-size: .7rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--sub); transition: background .18s, color .18s; user-select: none; }
+    .lang-btn.on { background: var(--blue); color: #fff; }
+    @media (max-width: 900px) { .nav-links { display: none; } }
+
+    /* ─── LANG TOGGLE ─── */
+    [data-lang="en"] .pt, [data-lang="pt"] .en { display: none !important; }
+
+    /* ─── LAYOUT ─── */
+    .wrap { position: relative; z-index: 1; }
+    .inner { max-width: 1100px; margin: 0 auto; padding: 6.5rem 2rem; }
+    .inner-wide { max-width: 1260px; margin: 0 auto; padding: 6.5rem 2rem; }
+    .section-label {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 600;
+      letter-spacing: .15em; text-transform: uppercase; color: var(--blue);
+      margin-bottom: .9rem;
+    }
+    .section-label::before { content: ''; display: block; width: 18px; height: 2px; background: var(--blue); border-radius: 2px; }
+    h2 { font-size: clamp(1.7rem, 3.5vw, 2.5rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.12; margin-bottom: 1rem; }
+    .lead { font-size: 1.02rem; color: var(--sub); line-height: 1.85; max-width: 660px; margin-bottom: 3rem; }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes pulse2   { 0%,100%{opacity:1} 50%{opacity:.45} }
+    @keyframes bounce   { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(5px)} }
+    .fade { opacity: 0; transform: translateY(20px); }
+    .fade.in { animation: fadeUp .55s ease forwards; }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 7rem 2rem 5rem; text-align: center;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: .45rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 600;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--teal); background: var(--teal-dim);
+      border: 1px solid rgba(0,229,179,.22); border-radius: 100px;
+      padding: .32rem .9rem; margin-bottom: 2rem;
+      animation: fadeUp .5s ease both;
+    }
+    .hero-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: pulse2 2s infinite; }
+    h1 { font-size: clamp(2.4rem, 6vw, 4.6rem); font-weight: 800; letter-spacing: -.04em; line-height: 1.06; max-width: 900px; animation: fadeUp .6s ease .08s both; }
+    h1 em { font-style: normal; color: var(--blue); }
+    .hero-sub { font-size: clamp(.95rem, 2vw, 1.12rem); color: var(--sub); max-width: 680px; margin-top: 1.5rem; line-height: 1.85; animation: fadeUp .6s ease .16s both; }
+    .hero-tags { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin-top: 2rem; animation: fadeUp .6s ease .22s both; }
+    .htag { font-family: 'JetBrains Mono', monospace; font-size: .64rem; padding: .27rem .7rem; border-radius: 5px; background: var(--bg3); border: 1px solid var(--border2); color: var(--sub); }
+    .hero-cta { display: flex; gap: .9rem; margin-top: 2.5rem; flex-wrap: wrap; justify-content: center; animation: fadeUp .6s ease .28s both; }
+    .btn { display: inline-flex; align-items: center; gap: .45rem; padding: .7rem 1.6rem; border-radius: 10px; font-size: .87rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; font-family: inherit; transition: all .22s; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #5ab3ff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(46,155,255,.35); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); }
+    .scroll-hint { position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: .45rem; color: var(--sub); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; animation: fadeUp .6s ease .6s both; }
+    .arr { width: 16px; height: 16px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); animation: bounce 1.6s infinite; }
+
+    /* ─── PROBLEM ─── */
+    #problem { background: var(--bg2); }
+    .root-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+    .root-table th { font-family: 'JetBrains Mono', monospace; font-size: .67rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); padding: .65rem 1rem; text-align: left; border-bottom: 1px solid var(--border); background: var(--blue-dim); }
+    .root-table td { font-size: .85rem; color: var(--sub); padding: .75rem 1rem; border-bottom: 1px solid var(--border2); line-height: 1.6; vertical-align: top; }
+    .root-table tr:last-child td { border-bottom: none; }
+    .root-table td:first-child { font-weight: 600; color: var(--text); white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: .78rem; }
+    .root-table tr:hover td { background: rgba(46,155,255,.03); }
+
+    /* ─── OVERVIEW ─── */
+    #overview { background: var(--bg); }
+    .layers-flow { display: flex; flex-direction: column; gap: 0; }
+    .flow-row { display: grid; grid-template-columns: 56px 1fr; gap: 1.5rem; align-items: stretch; padding: 1.5rem; background: var(--bg3); border: 1px solid var(--border2); border-radius: 12px; margin-bottom: .75rem; transition: border-color .2s; }
+    .flow-row:hover { border-color: var(--border); }
+    .flow-num { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1rem; flex-shrink: 0; margin-top: .15rem; }
+    .n1 { background: var(--blue-dim); color: var(--blue); }
+    .n2 { background: var(--teal-dim); color: var(--teal); }
+    .n3 { background: var(--purp-dim); color: var(--purple); }
+    .n4 { background: var(--red-dim); color: var(--red); }
+    .flow-body {}
+    .flow-component { font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .2rem; }
+    .n1 + .flow-body .flow-component { color: var(--blue); }
+    .n2 + .flow-body .flow-component { color: var(--teal); }
+    .n3 + .flow-body .flow-component { color: var(--purple); }
+    .n4 + .flow-body .flow-component { color: var(--red); }
+    .flow-name { font-size: 1.02rem; font-weight: 700; margin-bottom: .4rem; line-height: 1.25; }
+    .flow-desc { font-size: .84rem; color: var(--sub); line-height: 1.7; }
+    .flow-arrow { text-align: center; color: var(--sub); font-size: .85rem; margin: -.2rem 0 .15rem; opacity: .45; padding-left: 3.5rem; }
+
+    /* ─── LAYER SECTIONS ─── */
+    .layer-section { position: relative; z-index: 1; }
+    #l1 { background: var(--bg2); }
+    #l2 { background: var(--bg); }
+    #l3 { background: var(--bg2); }
+    #l4 { background: var(--bg); }
+
+    .layer-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
+    .layer-badge { font-size: 1.5rem; width: 54px; height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .lb1 { background: var(--blue-dim); }
+    .lb2 { background: var(--teal-dim); }
+    .lb3 { background: var(--purp-dim); }
+    .lb4 { background: var(--red-dim); }
+    .layer-header-text {}
+    .layer-tag { font-family: 'JetBrains Mono', monospace; font-size: .63rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .15rem; }
+    .lt1 { color: var(--blue); } .lt2 { color: var(--teal); } .lt3 { color: var(--purple); } .lt4 { color: var(--red); }
+    .layer-title { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
+
+    /* dim table */
+    .dim-table { width: 100%; border-collapse: collapse; margin-bottom: 2.5rem; }
+    .dim-table th { font-family: 'JetBrains Mono', monospace; font-size: .63rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); padding: .6rem .9rem; text-align: left; border-bottom: 1px solid var(--border); background: var(--blue-dim); }
+    .dim-table td { font-size: .83rem; padding: .8rem .9rem; border-bottom: 1px solid var(--border2); color: var(--sub); vertical-align: top; line-height: 1.6; }
+    .dim-table td:first-child { font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: .75rem; white-space: nowrap; }
+    .dim-table tr:last-child td { border-bottom: none; }
+    .dim-table tr:hover td { background: rgba(46,155,255,.02); }
+
+    /* blocks */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media(max-width:720px){ .two-col { grid-template-columns: 1fr; } }
+    .block { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r); padding: 1.5rem; }
+    .block-title { font-size: .85rem; font-weight: 700; margin-bottom: .9rem; display: flex; align-items: center; gap: .5rem; }
+    .block-body { font-size: .83rem; color: var(--sub); line-height: 1.75; }
+    .block-list { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
+    .block-list li { display: flex; align-items: flex-start; gap: .5rem; font-size: .83rem; color: var(--sub); line-height: 1.6; }
+    .block-list li::before { content: '›'; color: var(--blue); flex-shrink: 0; margin-top: .05rem; }
+
+    /* callout */
+    .callout { border-radius: var(--r); padding: 1.5rem 1.75rem; margin: 2rem 0; }
+    .callout.blue { background: var(--blue-dim); border: 1px solid rgba(46,155,255,.22); border-left: 4px solid var(--blue); }
+    .callout.teal { background: var(--teal-dim); border: 1px solid rgba(0,229,179,.22); border-left: 4px solid var(--teal); }
+    .callout.orange { background: rgba(251,146,60,.07); border: 1px solid rgba(251,146,60,.22); border-left: 4px solid var(--orange); }
+    .callout.purple { background: var(--purp-dim); border: 1px solid rgba(167,139,250,.22); border-left: 4px solid var(--purple); }
+    .callout-title { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: .6rem; }
+    .callout.blue .callout-title { color: var(--blue); }
+    .callout.teal .callout-title { color: var(--teal); }
+    .callout.orange .callout-title { color: var(--orange); }
+    .callout.purple .callout-title { color: var(--purple); }
+    .callout p { font-size: .87rem; color: var(--sub); line-height: 1.8; }
+    .callout p + p { margin-top: .6rem; }
+    .callout strong { color: var(--text); }
+
+    /* sprint example */
+    .sprint-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0; }
+    @media(max-width:720px){ .sprint-grid { grid-template-columns: 1fr; } }
+    .sprint-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .sprint-table th { font-family: 'JetBrains Mono', monospace; font-size: .62rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--sub); padding: .5rem .8rem; border-bottom: 1px solid var(--border2); background: var(--bg4); text-align: left; }
+    .sprint-table td { padding: .65rem .8rem; border-bottom: 1px solid var(--border2); color: var(--sub); vertical-align: top; line-height: 1.55; }
+    .sprint-table tr:last-child td { border-bottom: none; }
+    .sprint-table td:first-child { font-weight: 600; color: var(--text); font-size: .77rem; }
+    .status { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .6rem; font-weight: 600; padding: .15rem .5rem; border-radius: 4px; }
+    .s-exp { background: rgba(251,146,60,.12); color: var(--orange); border: 1px solid rgba(251,146,60,.22); }
+    .s-ele { background: rgba(248,113,113,.12); color: var(--red); border: 1px solid rgba(248,113,113,.22); }
+    .s-add { background: rgba(0,229,179,.1); color: var(--teal); border: 1px solid rgba(0,229,179,.2); }
+    .s-mod { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(46,155,255,.2); }
+
+    /* req table */
+    .req-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; }
+    .req-table th { font-family: 'JetBrains Mono', monospace; font-size: .62rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--teal); padding: .55rem .85rem; border-bottom: 1px solid rgba(0,229,179,.15); background: var(--teal-dim); text-align: left; }
+    .req-table td { font-size: .81rem; padding: .7rem .85rem; border-bottom: 1px solid var(--border2); color: var(--sub); vertical-align: top; line-height: 1.55; }
+    .req-table tr:last-child td { border-bottom: none; }
+    .req-table td:first-child { font-weight: 700; color: var(--text); font-size: .8rem; white-space: nowrap; }
+    .req-table td:last-child { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--sub); }
+    .req-table tr:hover td { background: rgba(0,229,179,.02); }
+
+    /* chips */
+    .chip-row { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0; }
+    .chip { font-family: 'JetBrains Mono', monospace; font-size: .65rem; padding: .22rem .62rem; border-radius: 5px; border: 1px solid var(--border2); color: var(--sub); background: var(--bg3); }
+    .chip-blue { border-color: rgba(46,155,255,.3); color: var(--blue); background: var(--blue-dim); }
+    .chip-teal { border-color: rgba(0,229,179,.3); color: var(--teal); background: var(--teal-dim); }
+    .chip-purp { border-color: rgba(167,139,250,.3); color: var(--purple); background: var(--purp-dim); }
+    .chip-red  { border-color: rgba(248,113,113,.3); color: var(--red); background: var(--red-dim); }
+    .chip-ora  { border-color: rgba(251,146,60,.3); color: var(--orange); background: rgba(251,146,60,.07); }
+
+    /* verification layer */
+    .verif-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0 2rem; }
+    .verif-table th { font-family: 'JetBrains Mono', monospace; font-size: .62rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--red); padding: .55rem .9rem; border-bottom: 1px solid rgba(248,113,113,.2); background: var(--red-dim); text-align: left; }
+    .verif-table td { font-size: .82rem; padding: .8rem .9rem; border-bottom: 1px solid var(--border2); color: var(--sub); vertical-align: top; line-height: 1.6; }
+    .verif-table td:first-child { font-weight: 700; color: var(--text); }
+    .verif-table tr:last-child td { border-bottom: none; }
+    .verif-table tr:hover td { background: rgba(248,113,113,.02); }
+
+    /* tier cards */
+    .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.25rem; }
+    .tier-card { border-radius: var(--r); padding: 1.5rem; border: 1px solid; transition: transform .22s, box-shadow .22s; }
+    .tier-card:hover { transform: translateY(-3px); }
+    .t1 { background: var(--red-dim); border-color: rgba(248,113,113,.25); }
+    .t2 { background: rgba(251,146,60,.07); border-color: rgba(251,146,60,.25); }
+    .t3 { background: var(--purp-dim); border-color: rgba(167,139,250,.25); }
+    .t4 { background: var(--blue-dim); border-color: rgba(46,155,255,.25); }
+    .t1:hover { box-shadow: 0 8px 24px rgba(248,113,113,.15); }
+    .t2:hover { box-shadow: 0 8px 24px rgba(251,146,60,.15); }
+    .t3:hover { box-shadow: 0 8px 24px rgba(167,139,250,.15); }
+    .t4:hover { box-shadow: 0 8px 24px rgba(46,155,255,.15); }
+    .tier-label { font-family: 'JetBrains Mono', monospace; font-size: .62rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; margin-bottom: .55rem; }
+    .t1 .tier-label { color: var(--red); } .t2 .tier-label { color: var(--orange); }
+    .t3 .tier-label { color: var(--purple); } .t4 .tier-label { color: var(--blue); }
+    .tier-sev { font-size: .72rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; padding: .18rem .55rem; border-radius: 4px; display: inline-block; margin-bottom: .7rem; }
+    .t1 .tier-sev { background: rgba(248,113,113,.15); color: var(--red); }
+    .t2 .tier-sev { background: rgba(251,146,60,.15); color: var(--orange); }
+    .t3 .tier-sev { background: rgba(167,139,250,.15); color: var(--purple); }
+    .t4 .tier-sev { background: var(--blue-dim); color: var(--blue); }
+    .tier-name { font-size: .97rem; font-weight: 700; margin-bottom: .5rem; line-height: 1.3; }
+    .tier-channel { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--sub); margin-bottom: .7rem; }
+    .tier-desc { font-size: .82rem; color: var(--sub); line-height: 1.65; }
+
+    /* ─── ROADMAP ─── */
+    #roadmap { background: var(--bg2); }
+    .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+    .phase { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r); padding: 1.5rem; border-top: 3px solid; }
+    .ph1 { border-top-color: var(--teal); }
+    .ph2 { border-top-color: var(--blue); }
+    .ph3 { border-top-color: var(--purple); }
+    .phase-period { font-family: 'JetBrains Mono', monospace; font-size: .63rem; font-weight: 600; letter-spacing: .08em; margin-bottom: .4rem; }
+    .ph1 .phase-period { color: var(--teal); }
+    .ph2 .phase-period { color: var(--blue); }
+    .ph3 .phase-period { color: var(--purple); }
+    .phase-name { font-size: 1rem; font-weight: 700; margin-bottom: .9rem; }
+    .phase-steps { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+    .phase-steps li { display: flex; align-items: flex-start; gap: .5rem; font-size: .82rem; color: var(--sub); line-height: 1.6; }
+    .phase-steps li::before { content: '›'; flex-shrink: 0; margin-top: .05rem; }
+    .ph1 .phase-steps li::before { color: var(--teal); }
+    .ph2 .phase-steps li::before { color: var(--blue); }
+    .ph3 .phase-steps li::before { color: var(--purple); }
+
+    /* ─── METRICS ─── */
+    #metrics { background: var(--bg); }
+    .metrics-table { width: 100%; border-collapse: collapse; }
+    .metrics-table th { font-family: 'JetBrains Mono', monospace; font-size: .63rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); padding: .65rem 1rem; text-align: left; border-bottom: 1px solid var(--border); background: var(--blue-dim); }
+    .metrics-table td { font-size: .83rem; padding: .8rem 1rem; border-bottom: 1px solid var(--border2); color: var(--sub); vertical-align: top; line-height: 1.6; }
+    .metrics-table tr:last-child td { border-bottom: none; }
+    .metrics-table td:first-child { font-weight: 600; color: var(--text); }
+    .metrics-table td:nth-child(2) { font-family: 'JetBrains Mono', monospace; font-size: .72rem; }
+    .metrics-table tr:hover td { background: rgba(46,155,255,.02); }
+    .m-type { font-family: 'JetBrains Mono', monospace; font-size: .62rem; padding: .15rem .5rem; border-radius: 4px; }
+    .m-leading { background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(0,229,179,.2); }
+    .m-lagging { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(46,155,255,.2); }
+    .m-calibr  { background: var(--purp-dim); color: var(--purple); border: 1px solid rgba(167,139,250,.2); }
+
+    /* ─── ARCHITECT ─── */
+    #architect { background: var(--bg2); }
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media(max-width:720px){ .compare { grid-template-columns: 1fr; } }
+    .compare-col { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r); padding: 1.5rem; }
+    .compare-head { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.1rem; }
+    .compare-title { font-size: .95rem; font-weight: 700; }
+    .compare-title.before { color: var(--red); }
+    .compare-title.after { color: var(--teal); }
+    .compare-list { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
+    .compare-list li { display: flex; align-items: flex-start; gap: .5rem; font-size: .83rem; color: var(--sub); line-height: 1.6; }
+    .compare-list li::before { content: '›'; flex-shrink: 0; }
+    .compare-col.before .compare-list li::before { color: var(--red); }
+    .compare-col.after  .compare-list li::before { color: var(--teal); }
+    .comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .comp-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r-sm); padding: 1.2rem; }
+    .comp-name { font-size: .87rem; font-weight: 700; margin-bottom: .45rem; }
+    .comp-desc { font-size: .8rem; color: var(--sub); line-height: 1.65; }
+    blockquote { font-size: .97rem; font-style: italic; color: var(--sub); border-left: 3px solid var(--blue); padding: 1rem 1.25rem; margin: 2rem 0 0; background: var(--bg3); border-radius: 0 10px 10px 0; line-height: 1.82; }
+    blockquote footer { font-family: 'JetBrains Mono', monospace; font-size: .67rem; color: var(--blue); margin-top: .65rem; font-style: normal; letter-spacing: .05em; }
+
+    /* ─── ABOUT ─── */
+    #about { background: var(--bg); }
+    .about-layout { display: grid; grid-template-columns: auto 1fr; gap: 3rem; align-items: start; }
+    @media(max-width:700px){ .about-layout { grid-template-columns: 1fr; } }
+    .avatar { width: 140px; height: 140px; border-radius: 18px; background: linear-gradient(135deg, rgba(46,155,255,.18), rgba(167,139,250,.18)); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 4rem; flex-shrink: 0; }
+    .about-name { font-size: 1.65rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .35rem; }
+    .about-role { font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--blue); letter-spacing: .06em; margin-bottom: 1.25rem; }
+    .about-bio { font-size: .88rem; color: var(--sub); line-height: 1.85; max-width: 640px; margin-bottom: 1.5rem; }
+    .certs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.75rem; }
+    .cert { font-family: 'JetBrains Mono', monospace; font-size: .63rem; padding: .25rem .65rem; border-radius: 5px; background: var(--blue-dim); border: 1px solid rgba(46,155,255,.18); color: var(--blue); }
+    .about-links { display: flex; gap: .8rem; flex-wrap: wrap; }
+
+    /* ─── FOOTER ─── */
+    footer { position: relative; z-index: 1; background: var(--bg); border-top: 1px solid var(--border2); padding: 1.75rem 2rem; text-align: center; }
+    .footer-txt { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--sub); }
+    .footer-txt a { color: var(--blue); text-decoration: none; }
+    .footer-txt a:hover { text-decoration: underline; }
+
+    /* responsive table scroll */
+    .table-wrap { overflow-x: auto; border-radius: var(--r-sm); }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="prog" style="width:0%"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">LSA <span>· Living Security Architecture</span></div>
+  <ul class="nav-links">
+    <li><a href="#problem"    class="en">Problem</a>        <a href="#problem"    class="pt">Problema</a></li>
+    <li><a href="#overview"   class="en">Overview</a>       <a href="#overview"   class="pt">Visão Geral</a></li>
+    <li><a href="#l1"         class="en">ASP</a>            <a href="#l1"         class="pt">ASP</a></li>
+    <li><a href="#l2"         class="en">RGE</a>            <a href="#l2"         class="pt">RGE</a></li>
+    <li><a href="#l3"         class="en">Threat Model</a>   <a href="#l3"         class="pt">Ameaças</a></li>
+    <li><a href="#l4"         class="en">Verification</a>   <a href="#l4"         class="pt">Verificação</a></li>
+    <li><a href="#roadmap"    class="en">Roadmap</a>        <a href="#roadmap"    class="pt">Roadmap</a></li>
+    <li><a href="#about"      class="en">About</a>          <a href="#about"      class="pt">Sobre</a></li>
+  </ul>
+  <div class="lang">
+    <div class="lang-btn on" data-l="en">EN</div>
+    <div class="lang-btn"   data-l="pt">PT</div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="wrap">
+<section id="hero">
+  <div class="hero-pill"><span class="dot"></span>
+    <span class="en">Framework Specification v1.0 · April 2026</span>
+    <span class="pt">Especificação do Framework v1.0 · Abril 2026</span>
+  </div>
+  <h1 class="en">The <em>Living</em> Security<br>Architecture</h1>
+  <h1 class="pt">A Arquitetura de<br>Segurança <em>Viva</em></h1>
+  <p class="hero-sub en">AI-driven dynamic risk governance for continuously evolving applications. Four interdependent layers that co-evolve with your software in real time — closing the gap between security as designed and security as deployed.</p>
+  <p class="hero-sub pt">Governança de risco dinâmica orientada por IA para aplicações em evolução contínua. Quatro camadas interdependentes que co-evoluem com o seu software em tempo real — fechando a lacuna entre a segurança como projetada e a segurança como implantada.</p>
+  <div class="hero-tags">
+    <span class="htag">ASP</span><span class="htag">RGE</span><span class="htag">Threat Modeling</span>
+    <span class="htag">SAST · SCA · DAST · CSPM · IaC</span>
+    <span class="htag">STRIDE · MITRE ATT&amp;CK</span>
+    <span class="htag">CIS Controls · NIST CSF · OWASP ASVS</span>
+    <span class="htag">BCB 4.893 · DORA · LGPD</span>
+    <span class="htag">Policy-as-Code · OPA</span>
+  </div>
+  <div class="hero-cta">
+    <a href="#overview" class="btn btn-primary en">Explore the Framework ↓</a>
+    <a href="#overview" class="btn btn-primary pt">Explorar o Framework ↓</a>
+    <a href="#about"    class="btn btn-ghost en">About the Author</a>
+    <a href="#about"    class="btn btn-ghost pt">Sobre o Autor</a>
+  </div>
+  <div class="scroll-hint">
+    <span class="en">scroll</span><span class="pt">rolar</span>
+    <div class="arr"></div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="inner">
+    <div class="section-label en">The Problem</div>
+    <div class="section-label pt">O Problema</div>
+    <h2 class="en">The Architecture Drift</h2>
+    <h2 class="pt">O Architecture Drift</h2>
+    <p class="lead en">Security architecture was designed for quarterly releases and infrequent changes. In continuous delivery environments, applications change multiple times per day. Controls were designed for an application that no longer exists.</p>
+    <p class="lead pt">A arquitetura de segurança foi projetada para releases trimestrais e mudanças infrequentes. Em ambientes de entrega contínua, aplicações mudam várias vezes por dia. Os controles foram projetados para uma aplicação que não existe mais.</p>
+
+    <div class="table-wrap fade">
+      <table class="root-table">
+        <thead><tr>
+          <th class="en">Root Cause</th>        <th class="pt">Causa Raiz</th>
+          <th class="en">Description</th>        <th class="pt">Descrição</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="en">Point-in-Time Governance</td><td class="pt">Governança Pontual</td>
+              <td class="en">Threat models, control specifications, and compliance assessments are produced once and maintained manually, if at all.</td>
+              <td class="pt">Modelos de ameaças, especificações de controle e avaliações de conformidade são produzidos uma vez e mantidos manualmente, quando muito.</td></tr>
+          <tr><td class="en">Human-Dependent Detection</td><td class="pt">Detecção Dependente de Humanos</td>
+              <td class="en">The burden of detecting risk-relevant application changes falls on developers who may not recognize security implications.</td>
+              <td class="pt">A carga de detectar mudanças relevantes de risco recai sobre desenvolvedores que podem não reconhecer implicações de segurança.</td></tr>
+          <tr><td class="en">Static-to-Dynamic Mismatch</td><td class="pt">Incompatibilidade Estático-Dinâmica</td>
+              <td class="en">Security requirements are derived from a fixed catalog applied to a fixed profile, creating increasing inaccuracy with every sprint.</td>
+              <td class="pt">Os requisitos de segurança são derivados de um catálogo fixo aplicado a um perfil fixo, criando inacurácia crescente a cada sprint.</td></tr>
+          <tr><td class="en">Verification Gap</td><td class="pt">Lacuna de Verificação</td>
+              <td class="en">SAST, DAST, and CSPM detect vulnerabilities independently but lack integration to verify whether specific security requirements are satisfied.</td>
+              <td class="pt">SAST, DAST e CSPM detectam vulnerabilidades de forma independente, mas não têm integração para verificar se requisitos específicos de segurança são satisfeitos.</td></tr>
+          <tr><td class="en">Reactive Governance</td><td class="pt">Governança Reativa</td>
+              <td class="en">Manual escalation chains depend on the persistence of the security team rather than the institutional velocity of the organization.</td>
+              <td class="pt">As cadeias de escalonamento manual dependem da persistência da equipe de segurança, não da velocidade institucional da organização.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="inner">
+    <div class="section-label en">Framework Architecture</div>
+    <div class="section-label pt">Arquitetura do Framework</div>
+    <h2 class="en">Four interdependent layers,<br>one continuous feedback loop.</h2>
+    <h2 class="pt">Quatro camadas interdependentes,<br>um loop de feedback contínuo.</h2>
+    <p class="lead en">Each layer builds on the outputs of the previous. Together they form a system where application characteristics, security requirements, threat assessments, and compliance verification co-evolve with the application itself.</p>
+    <p class="lead pt">Cada camada constrói sobre os outputs da anterior. Juntas formam um sistema onde características da aplicação, requisitos de segurança, avaliações de ameaças e verificação de conformidade co-evoluem com a própria aplicação.</p>
+
+    <div class="layers-flow fade">
+      <div class="flow-row">
+        <div class="flow-num n1">01</div>
+        <div class="flow-body">
+          <div class="flow-component en">Application Security Profile · ASP</div>
+          <div class="flow-component pt">Perfil de Segurança da Aplicação · ASP</div>
+          <div class="flow-name en">Dynamic Application Profiling</div>
+          <div class="flow-name pt">Perfilamento Dinâmico da Aplicação</div>
+          <div class="flow-desc en">Continuously derives a structured, machine-readable risk profile from development pipeline signals — code diffs, IaC, API specs, manifests, runtime telemetry. Not a document. A live data artifact.</div>
+          <div class="flow-desc pt">Deriva continuamente um perfil de risco estruturado e legível por máquina a partir de sinais do pipeline de desenvolvimento — code diffs, IaC, specs de API, manifestos, telemetria de runtime. Não um documento. Um artefato de dados vivo.</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-num n2">02</div>
+        <div class="flow-body">
+          <div class="flow-component en">Requirement Generation Engine · RGE</div>
+          <div class="flow-component pt">Engine de Geração de Requisitos · RGE</div>
+          <div class="flow-name en">Dynamic Control Requirements</div>
+          <div class="flow-name pt">Requisitos de Controle Dinâmicos</div>
+          <div class="flow-desc en">A rule-based system that translates ASP state changes into incremental, versioned control requirements. Requirements are not a static catalog — they are a function of the application's current profile.</div>
+          <div class="flow-desc pt">Um sistema baseado em regras que traduz mudanças de estado do ASP em requisitos de controle incrementais e versionados. Requisitos não são um catálogo estático — são uma função do perfil atual da aplicação.</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↕ bidirectional</div>
+      <div class="flow-row">
+        <div class="flow-num n3">03</div>
+        <div class="flow-body">
+          <div class="flow-component en">Continuous Threat Modeling Engine</div>
+          <div class="flow-component pt">Engine de Modelagem Contínua de Ameaças</div>
+          <div class="flow-name en">Living Threat Model</div>
+          <div class="flow-name pt">Modelo de Ameaças Vivo</div>
+          <div class="flow-desc en">Maintains a structured, versioned threat model updated incrementally as the application evolves. Not a PDF — a first-class engineering artifact in source control, referenced by automated verification systems.</div>
+          <div class="flow-desc pt">Mantém um modelo de ameaças estruturado e versionado atualizado incrementalmente conforme a aplicação evolui. Não um PDF — um artefato de engenharia de primeira classe no controle de versão, referenciado por sistemas de verificação automatizados.</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-num n4">04</div>
+        <div class="flow-body">
+          <div class="flow-component en">Verification &amp; Governance Mobilization</div>
+          <div class="flow-component pt">Verificação e Mobilização de Governança</div>
+          <div class="flow-name en">Three-Layer Verification + Four-Tier Escalation</div>
+          <div class="flow-name pt">Verificação em Três Camadas + Escalonamento em Quatro Tiers</div>
+          <div class="flow-desc en">Verifies requirements across static (SAST, IaC, SCA), dynamic (DAST, API testing, RASP), and posture (CSPM) layers. Routes findings to existing governance channels in proportion to severity.</div>
+          <div class="flow-desc pt">Verifica requisitos em camadas estática (SAST, IaC, SCA), dinâmica (DAST, testes de API, RASP) e de postura (CSPM). Direciona achados para canais de governança existentes em proporção à severidade.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LAYER 1: ASP -->
+<section id="l1" class="layer-section">
+  <div class="inner">
+    <div class="layer-header">
+      <div class="layer-badge lb1">📡</div>
+      <div class="layer-header-text">
+        <div class="layer-tag lt1">Layer 1 · Application Security Profile</div>
+        <div class="layer-title en">Dynamic Application<br>Profiling (ASP)</div>
+        <div class="layer-title pt">Perfilamento Dinâmico<br>da Aplicação (ASP)</div>
+      </div>
+    </div>
+
+    <p class="lead en">The ASP is not a document maintained by humans. It is a data artifact continuously derived from machine-readable signals emitted by the development pipeline — no risk questionnaires, no manual classification.</p>
+    <p class="lead pt">O ASP não é um documento mantido por humanos. É um artefato de dados derivado continuamente de sinais legíveis por máquina emitidos pelo pipeline de desenvolvimento — sem questionários de risco, sem classificação manual.</p>
+
+    <div class="table-wrap fade">
+      <table class="dim-table">
+        <thead><tr>
+          <th class="en">Dimension</th>        <th class="pt">Dimensão</th>
+          <th class="en">Definition</th>        <th class="pt">Definição</th>
+          <th class="en">Signal Sources</th>    <th class="pt">Fontes de Sinal</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td>Attack Surface</td>
+            <td class="en">API endpoints (auth/unauth), network exposure, input vectors, admin interfaces.</td>
+            <td class="pt">Endpoints de API (auth/unauth), exposição de rede, vetores de entrada, interfaces admin.</td>
+            <td class="en">OpenAPI specs, code diffs, network configs, deployment manifests.</td>
+            <td class="pt">Specs OpenAPI, code diffs, configs de rede, manifestos de deploy.</td>
+          </tr>
+          <tr>
+            <td>Data Classification</td>
+            <td class="en">Sensitivity of data processed, stored, or transmitted. Crossing thresholds (PII, financial, regulated) triggers new requirements.</td>
+            <td class="pt">Sensibilidade dos dados processados, armazenados ou transmitidos. Cruzar limiares (PII, financeiro, regulado) dispara novos requisitos.</td>
+            <td class="en">Schema definitions, field names, data flow analysis, DB configs.</td>
+            <td class="pt">Definições de schema, nomes de campo, análise de fluxo de dados, configs de BD.</td>
+          </tr>
+          <tr>
+            <td>Auth &amp; Authorization</td>
+            <td class="en">How users and services authenticate; how access boundaries are enforced. Changes here alter trust models fundamentally.</td>
+            <td class="pt">Como usuários e serviços se autenticam; como limites de acesso são impostos. Mudanças aqui alteram modelos de confiança fundamentalmente.</td>
+            <td class="en">Auth middleware, OAuth configs, RBAC/ABAC policies, service mesh config.</td>
+            <td class="pt">Middleware de auth, configs OAuth, políticas RBAC/ABAC, config de service mesh.</td>
+          </tr>
+          <tr>
+            <td>External Integrations</td>
+            <td class="en">Third-party services, partner APIs, external data sources. Each integration is an implicit trust decision.</td>
+            <td class="pt">Serviços de terceiros, APIs de parceiros, fontes de dados externas. Cada integração é uma decisão implícita de confiança.</td>
+            <td class="en">Dependency manifests, API client configs, webhook registrations.</td>
+            <td class="pt">Manifestos de dependências, configs de client de API, registros de webhook.</td>
+          </tr>
+          <tr>
+            <td>Deployment Posture</td>
+            <td class="en">Cloud provider, container orchestration, network segmentation, IAM bindings.</td>
+            <td class="pt">Provedor de nuvem, orquestração de containers, segmentação de rede, bindings de IAM.</td>
+            <td class="en">Terraform / Helm / Bicep files, K8s manifests, cloud resource tags.</td>
+            <td class="pt">Arquivos Terraform / Helm / Bicep, manifestos K8s, tags de recursos cloud.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout blue fade">
+      <div class="callout-title en">Architect's Role in Layer 1</div>
+      <div class="callout-title pt">Papel do Arquiteto na Camada 1</div>
+      <p class="en">Design the classification logic — which signals are relevant, how they map to ASP dimensions, what thresholds trigger updates, how conflicting signals are resolved. <strong>This is more like designing a sensor network than conducting an interview.</strong></p>
+      <p class="pt">Projetar a lógica de classificação — quais sinais são relevantes, como se mapeiam para as dimensões do ASP, quais limiares disparam atualizações, como sinais conflitantes são resolvidos. <strong>Isso é mais como projetar uma rede de sensores do que conduzir uma entrevista.</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- LAYER 2: RGE -->
+<section id="l2" class="layer-section">
+  <div class="inner">
+    <div class="layer-header">
+      <div class="layer-badge lb2">⚙️</div>
+      <div class="layer-header-text">
+        <div class="layer-tag lt2">Layer 2 · Requirement Generation Engine</div>
+        <div class="layer-title en">Dynamic Control<br>Requirements (RGE)</div>
+        <div class="layer-title pt">Requisitos de Controle<br>Dinâmicos (RGE)</div>
+      </div>
+    </div>
+
+    <p class="lead en">The RGE inverts the traditional model: instead of applying a fixed catalog to a static profile, it generates requirements from a live profile. Rules are authored by the security architect, version-controlled, and represent architectural security intent in machine-executable form.</p>
+    <p class="lead pt">A RGE inverte o modelo tradicional: em vez de aplicar um catálogo fixo a um perfil estático, ela gera requisitos a partir de um perfil vivo. As regras são autorais do arquiteto de segurança, versionadas, e representam a intenção arquitetural de segurança em forma executável por máquina.</p>
+
+    <!-- Sprint 17 Example -->
+    <div class="callout orange fade">
+      <div class="callout-title en">Concrete Example: Sprint 17</div>
+      <div class="callout-title pt">Exemplo Concreto: Sprint 17</div>
+      <p class="en">Initial state: <strong>internal API, mTLS authentication, no PII, no internet exposure.</strong> Sprint 17 introduces a public-facing REST endpoint for external partners to submit transaction data.</p>
+      <p class="pt">Estado inicial: <strong>API interna, autenticação mTLS, sem PII, sem exposição à internet.</strong> A Sprint 17 introduz um endpoint REST público para parceiros externos enviarem dados de transação.</p>
+    </div>
+
+    <div class="sprint-grid fade">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:.75rem;" class="en">ASP Delta — What Changed</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:.75rem;" class="pt">ASP Delta — O Que Mudou</div>
+        <table class="sprint-table">
+          <thead><tr><th class="en">Dimension</th><th class="pt">Dimensão</th><th class="en">Status</th><th class="pt">Status</th></tr></thead>
+          <tbody>
+            <tr><td class="en">Attack Surface</td><td class="pt">Superfície de Ataque</td><td><span class="status s-exp">EXPANDED</span></td></tr>
+            <tr><td class="en">Data Classification</td><td class="pt">Classificação de Dados</td><td><span class="status s-ele">ELEVATED</span></td></tr>
+            <tr><td class="en">External Integrations</td><td class="pt">Integrações Externas</td><td><span class="status s-add">ADDED</span></td></tr>
+            <tr><td class="en">Deployment Posture</td><td class="pt">Postura de Deploy</td><td><span class="status s-mod">MODIFIED</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:.75rem;" class="en">Generated Requirements Delta</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:.75rem;" class="pt">Delta de Requisitos Gerados</div>
+        <table class="req-table">
+          <thead><tr><th class="en">Requirement</th><th class="pt">Requisito</th><th class="en">Trigger Rule</th><th class="pt">Regra Gatilho</th></tr></thead>
+          <tbody>
+            <tr><td>WAF Rules</td><td class="en">attack_surface=internet + integrations=external</td><td class="pt">attack_surface=internet + integrations=external</td></tr>
+            <tr><td>Rate Limiting</td><td class="en">attack_surface=internet</td><td class="pt">attack_surface=internet</td></tr>
+            <tr><td class="en">Input Validation</td><td class="pt">Validação de Input</td><td class="en">internet + data_class ≥ elevated</td><td class="pt">internet + data_class ≥ elevated</td></tr>
+            <tr><td>mTLS Partners</td><td class="en">integrations=external_write</td><td class="pt">integrations=external_write</td></tr>
+            <tr><td class="en">Access Logging</td><td class="pt">Log de Acesso</td><td class="en">integrations=external</td><td class="pt">integrations=external</td></tr>
+            <tr><td>DLP</td><td class="en">data_class ≥ elevated</td><td class="pt">data_class ≥ elevated</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p style="font-size:.84rem;color:var(--sub);line-height:1.75;margin-bottom:2rem;" class="en">When Sprint 22 removes the external partner integration, those requirements are retracted. <strong>The requirements set is a living backlog, not a static artifact.</strong></p>
+    <p style="font-size:.84rem;color:var(--sub);line-height:1.75;margin-bottom:2rem;" class="pt">Quando a Sprint 22 remove a integração com parceiros externos, esses requisitos são retratados. <strong>O conjunto de requisitos é um backlog vivo, não um artefato estático.</strong></p>
+
+    <!-- Control Frameworks -->
+    <div class="section-label en" style="margin-top:1rem;">Control Frameworks that Drive the RGE</div>
+    <div class="section-label pt" style="margin-top:1rem;">Frameworks de Controle que Orientam a RGE</div>
+    <p style="font-size:.88rem;color:var(--sub);line-height:1.75;margin-bottom:1.25rem;" class="en">The RGE mapping rules are grounded in industry frameworks — not invented from scratch. These are the sources the architect draws from when authoring rules:</p>
+    <p style="font-size:.88rem;color:var(--sub);line-height:1.75;margin-bottom:1.25rem;" class="pt">As regras de mapeamento da RGE são fundamentadas em frameworks da indústria — não inventadas do zero. Estas são as fontes que o arquiteto usa ao criar as regras:</p>
+
+    <div class="two-col fade">
+      <div class="block">
+        <div class="block-title"><span style="color:var(--teal)">◆</span> <span class="en">Application Control Standards</span><span class="pt">Padrões de Controle de Aplicação</span></div>
+        <ul class="block-list">
+          <li class="en"><strong>OWASP ASVS L1–L3</strong> — Level mapped to ASP Data Classification + Attack Surface. L1 for all apps, L3 for regulated/internet-facing profiles.</li>
+          <li class="pt"><strong>OWASP ASVS L1–L3</strong> — Nível mapeado às dimensões de Classificação de Dados + Superfície de Ataque do ASP. L1 para todas as apps, L3 para perfis regulados/voltados à internet.</li>
+          <li class="en"><strong>OWASP Top 10 / API Top 10</strong> — Minimum floor for internet-facing endpoints.</li>
+          <li class="pt"><strong>OWASP Top 10 / API Top 10</strong> — Piso mínimo para endpoints voltados à internet.</li>
+          <li class="en"><strong>CIS Controls v8 IG1–IG3</strong> — Safeguards mapped per ASP risk tier. IG3 for high-exposure or regulated profiles.</li>
+          <li class="pt"><strong>CIS Controls v8 IG1–IG3</strong> — Salvaguardas mapeadas por tier de risco do ASP. IG3 para perfis de alta exposição ou regulados.</li>
+        </ul>
+      </div>
+      <div class="block">
+        <div class="block-title"><span style="color:var(--blue)">◆</span> <span class="en">Architecture &amp; Regulatory Standards</span><span class="pt">Padrões de Arquitetura e Regulatórios</span></div>
+        <ul class="block-list">
+          <li class="en"><strong>NIST CSF 2.0</strong> — Protect function maps to RGE; Detect function maps to the verification layer.</li>
+          <li class="pt"><strong>NIST CSF 2.0</strong> — Função Protect mapeia para a RGE; Detect mapeia para a camada de verificação.</li>
+          <li class="en"><strong>NIST SP 800-207 (Zero Trust)</strong> — Microsegmentation and least privilege principles translate to Auth &amp; Deployment Posture rules.</li>
+          <li class="pt"><strong>NIST SP 800-207 (Zero Trust)</strong> — Princípios de microsegmentação e menor privilégio traduzem-se em regras de Auth e Postura de Deploy.</li>
+          <li class="en"><strong>BCB 4.893 / LGPD / DORA</strong> — Hard regulatory floor: non-negotiable rules that cannot be overridden by exception processes.</li>
+          <li class="pt"><strong>BCB 4.893 / LGPD / DORA</strong> — Piso regulatório rígido: regras inegociáveis que não podem ser substituídas por processos de exceção.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout teal fade">
+      <div class="callout-title en">Architect's Role in Layer 2</div>
+      <div class="callout-title pt">Papel do Arquiteto na Camada 2</div>
+      <p class="en">Author mapping rules at machine-verifiable specificity: <strong>"all public API endpoints must implement OAuth 2.0 with token expiry ≤ 3,600 seconds"</strong> — not "implement appropriate authentication." Build feedback mechanisms for teams to flag false positives and improve rules over time.</p>
+      <p class="pt">Criar regras de mapeamento com especificidade verificável por máquina: <strong>"todos os endpoints de API pública devem implementar OAuth 2.0 com expiração de token ≤ 3.600 segundos"</strong> — não "implementar autenticação apropriada." Construir mecanismos de feedback para equipes sinalizarem falsos positivos e melhorarem as regras ao longo do tempo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LAYER 3: THREAT MODEL -->
+<section id="l3" class="layer-section">
+  <div class="inner">
+    <div class="layer-header">
+      <div class="layer-badge lb3">🧠</div>
+      <div class="layer-header-text">
+        <div class="layer-tag lt3">Layer 3 · Continuous Threat Modeling Engine</div>
+        <div class="layer-title en">Living Threat Model</div>
+        <div class="layer-title pt">Modelo de Ameaças Vivo</div>
+      </div>
+    </div>
+
+    <p class="lead en">Not a PDF filed in SharePoint. A first-class engineering artifact — versioned in source control, referenced by automated verification systems, reviewed in pull requests. Updated incrementally as the application evolves.</p>
+    <p class="lead pt">Não um PDF arquivado no SharePoint. Um artefato de engenharia de primeira classe — versionado no controle de versão, referenciado por sistemas de verificação automatizados, revisado em pull requests. Atualizado incrementalmente conforme a aplicação evolui.</p>
+
+    <div class="table-wrap fade">
+      <table class="dim-table">
+        <thead><tr>
+          <th class="en">Input Stream</th>    <th class="pt">Stream de Entrada</th>
+          <th class="en">Risk Signals Detected</th> <th class="pt">Sinais de Risco Detectados</th>
+          <th class="en">Processing Mode</th> <th class="pt">Modo de Processamento</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td>Code Diffs</td>
+            <td class="en">New parsing functions, DB queries with user input, deserialization calls, deprecated crypto.</td>
+            <td class="pt">Novas funções de parsing, queries de BD com input do usuário, chamadas de desserialização, cripto depreciada.</td>
+            <td class="en">Per-commit / per-PR</td><td class="pt">Por commit / por PR</td>
+          </tr>
+          <tr>
+            <td>IaC Changes</td>
+            <td class="en">Security group rules, storage access configs, K8s service account bindings, network exposure.</td>
+            <td class="pt">Regras de security group, configs de acesso a armazenamento, bindings de service account K8s, exposição de rede.</td>
+            <td class="en">Per-commit / per-PR</td><td class="pt">Por commit / por PR</td>
+          </tr>
+          <tr>
+            <td class="en">Dependency Updates</td><td class="pt">Atualizações de Dependências</td>
+            <td class="en">Known-vulnerable dependencies, deprecated libraries, transitive risk via dependency graph.</td>
+            <td class="pt">Dependências com vulnerabilidades conhecidas, bibliotecas depreciadas, risco transitivo via grafo de dependências.</td>
+            <td class="en">On change + periodic scan (SCA)</td><td class="pt">Na mudança + scan periódico (SCA)</td>
+          </tr>
+          <tr>
+            <td class="en">Threat Intelligence</td><td class="pt">Inteligência de Ameaças</td>
+            <td class="en">New CVEs, active exploit campaigns, threat actor TTPs relevant to the application's stack.</td>
+            <td class="pt">Novos CVEs, campanhas de exploit ativas, TTPs de atores de ameaça relevantes para o stack da aplicação.</td>
+            <td class="en">Continuous feed (NVD + TI feeds)</td><td class="pt">Feed contínuo (NVD + feeds de TI)</td>
+          </tr>
+          <tr>
+            <td class="en">Runtime Behavioral Signals</td><td class="pt">Sinais Comportamentais de Runtime</td>
+            <td class="en">Anomalous API call patterns, unusual data access, configuration drift from declared baseline.</td>
+            <td class="pt">Padrões anômalos de chamadas de API, acesso incomum a dados, drift de configuração da baseline declarada.</td>
+            <td class="en">Real-time monitoring (RASP / SIEM)</td><td class="pt">Monitoramento em tempo real (RASP / SIEM)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chip-row fade">
+      <span class="chip chip-purp">STRIDE</span>
+      <span class="chip chip-purp">MITRE ATT&amp;CK Enterprise</span>
+      <span class="chip chip-purp">MITRE ATT&amp;CK Cloud</span>
+      <span class="chip chip-purp">PASTA</span>
+      <span class="chip chip-purp">LINDDUN</span>
+      <span class="chip chip-purp">NVD / CVE</span>
+      <span class="chip chip-purp">OSINT Threat Intel</span>
+    </div>
+
+    <div class="callout purple fade">
+      <div class="callout-title en">Bidirectional Relationship with the RGE</div>
+      <div class="callout-title pt">Relação Bidirecional com a RGE</div>
+      <p class="en">The threat model and the RGE operate in a continuous feedback loop. <strong>New threat identified → new control requirement generated.</strong> Attack surface removed → associated requirements flagged for retirement. This ensures the requirement set remains grounded in actual risk — not abstract policy.</p>
+      <p class="pt">O modelo de ameaças e a RGE operam em um loop de feedback contínuo. <strong>Nova ameaça identificada → novo requisito de controle gerado.</strong> Superfície de ataque removida → requisitos associados sinalizados para retirada. Isso garante que o conjunto de requisitos permaneça fundamentado no risco real — não em política abstrata.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LAYER 4: VERIFICATION -->
+<section id="l4" class="layer-section">
+  <div class="inner-wide">
+    <div class="layer-header">
+      <div class="layer-badge lb4">🔍</div>
+      <div class="layer-header-text">
+        <div class="layer-tag lt4">Layer 4 · Verification &amp; Governance Mobilization</div>
+        <div class="layer-title en">Three-Layer Verification +<br>Four-Tier Escalation</div>
+        <div class="layer-title pt">Verificação em Três Camadas +<br>Escalonamento em Quatro Tiers</div>
+      </div>
+    </div>
+
+    <div class="callout orange fade" style="margin-bottom:2.5rem;">
+      <div class="callout-title en">Critical Distinction</div>
+      <div class="callout-title pt">Distinção Crítica</div>
+      <p class="en"><strong>Vulnerability detection ≠ Requirement verification.</strong> SAST detects code-level weaknesses — but most RGE-generated requirements cannot be verified by reading source code. WAF configuration lives in the API gateway. Rate limiting lives in infrastructure config. mTLS lives in the service mesh. Audit log retention lives in cloud logging services. Each requirement has a natural verification artifact — and it is almost never the application code.</p>
+      <p class="pt"><strong>Detecção de vulnerabilidade ≠ Verificação de requisito.</strong> SAST detecta fraquezas no nível de código — mas a maioria dos requisitos gerados pela RGE não pode ser verificada lendo código-fonte. Configuração de WAF vive no API gateway. Rate limiting vive na config de infraestrutura. mTLS vive na service mesh. Retenção de logs de auditoria vive nos serviços de logging cloud. Cada requisito tem um artefato natural de verificação — e quase nunca é o código da aplicação.</p>
+    </div>
+
+    <div class="table-wrap fade">
+      <table class="verif-table">
+        <thead><tr>
+          <th class="en">Layer</th>       <th class="pt">Camada</th>
+          <th class="en">Scope</th>       <th class="pt">Escopo</th>
+          <th class="en">Tools</th>       <th class="pt">Ferramentas</th>
+          <th class="en">AI Contribution</th><th class="pt">Contribuição da IA</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="en"><strong>Static</strong></td><td class="pt"><strong>Estática</strong></td>
+            <td class="en">Source code and IaC pre-deployment.</td>
+            <td class="pt">Código-fonte e IaC pré-deploy.</td>
+            <td>
+              <div class="chip-row" style="margin:0;gap:.3rem">
+                <span class="chip chip-red">SAST</span>
+                <span class="chip chip-red">SCA</span>
+                <span class="chip chip-red">IaC Scan</span>
+                <span class="chip chip-red">Policy-as-Code</span>
+              </div>
+              <div style="font-size:.73rem;color:var(--sub);margin-top:.4rem;" class="en">Semgrep · Checkmarx · Snyk · Checkov · tfsec · OPA · Sentinel · AWS Config Rules</div>
+              <div style="font-size:.73rem;color:var(--sub);margin-top:.4rem;" class="pt">Semgrep · Checkmarx · Snyk · Checkov · tfsec · OPA · Sentinel · AWS Config Rules</div>
+            </td>
+            <td class="en">Maps tool findings against active RGE requirements. Distinguishes vulnerability findings from requirement gaps.</td>
+            <td class="pt">Mapeia achados de ferramentas contra requisitos ativos da RGE. Distingue achados de vulnerabilidade de lacunas de requisito.</td>
+          </tr>
+          <tr>
+            <td class="en"><strong>Dynamic</strong></td><td class="pt"><strong>Dinâmica</strong></td>
+            <td class="en">Application behavior at runtime in staging and production.</td>
+            <td class="pt">Comportamento da aplicação em runtime em staging e produção.</td>
+            <td>
+              <div class="chip-row" style="margin:0;gap:.3rem">
+                <span class="chip chip-ora">DAST</span>
+                <span class="chip chip-ora">API Testing</span>
+                <span class="chip chip-ora">RASP</span>
+              </div>
+              <div style="font-size:.73rem;color:var(--sub);margin-top:.4rem;" class="en">OWASP ZAP · Burp Suite · 42Crunch · Traceable · RASP agents</div>
+              <div style="font-size:.73rem;color:var(--sub);margin-top:.4rem;" class="pt">OWASP ZAP · Burp Suite · 42Crunch · Traceable · agentes RASP</div>
+            </td>
+            <td class="en">Pattern recognition at scale across runtime events. Anomaly detection against behavioral baselines.</td>
+            <td class="pt">Reconhecimento de padrões em escala nos eventos de runtime. Detecção de anomalias contra baselines comportamentais.</td>
+          </tr>
+          <tr>
+            <td class="en"><strong>Posture</strong></td><td class="pt"><strong>Postura</strong></td>
+            <td class="en">Cloud and infrastructure configuration in deployed state.</td>
+            <td class="pt">Configuração de nuvem e infraestrutura no estado implantado.</td>
+            <td>
+              <div class="chip-row" style="margin:0;gap:.3rem">
+                <span class="chip chip-blue">CSPM</span>
+                <span class="chip chip-blue">CTEM</span>
+                <span class="chip chip-blue">BAS</span>
+              </div>
+              <div style="font-size:.73rem;color:var(--sub);margin-top:.4rem;" class="en">Prisma Cloud · Wiz · AWS Security Hub · Azure Defender · GCP SCC · Cymulate</div>
+              <div style="font-size:.73rem;color:var(--sub);margin-top:.4rem;" class="pt">Prisma Cloud · Wiz · AWS Security Hub · Azure Defender · GCP SCC · Cymulate</div>
+            </td>
+            <td class="en">Integrates ASP context into CSPM findings. A misconfigured resource in a payment service triggers a different response than in a dev sandbox.</td>
+            <td class="pt">Integra contexto do ASP nos achados do CSPM. Um recurso mal configurado em um serviço de pagamento dispara resposta diferente de um sandbox de dev.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:1.2rem;font-weight:700;letter-spacing:-.015em;margin:2.5rem 0 .75rem;" class="en">Four-Tier Escalation — Existing Channels, No New Processes</h3>
+    <h3 style="font-size:1.2rem;font-weight:700;letter-spacing:-.015em;margin:2.5rem 0 .75rem;" class="pt">Escalonamento em Quatro Tiers — Canais Existentes, Nenhum Processo Novo</h3>
+    <p style="font-size:.88rem;color:var(--sub);line-height:1.8;margin-bottom:1.75rem;max-width:700px;" class="en">Every escalation path routes to an existing institutional mechanism — the existing incident management platform, the existing backlog, the existing governance committee. The framework does not ask the organization to adopt new processes. It ensures existing processes receive the inputs they need to function effectively.</p>
+    <p style="font-size:.88rem;color:var(--sub);line-height:1.8;margin-bottom:1.75rem;max-width:700px;" class="pt">Cada caminho de escalonamento direciona para um mecanismo institucional existente — a plataforma de gestão de incidentes existente, o backlog existente, o comitê de governança existente. O framework não pede que a organização adote novos processos. Garante que os processos existentes recebam os inputs de que precisam para funcionar efetivamente.</p>
+
+    <div class="tier-grid fade">
+      <div class="tier-card t1">
+        <div class="tier-label en">Tier 1 · CI/CD Pipeline Gate</div>
+        <div class="tier-label pt">Tier 1 · Gate de Pipeline CI/CD</div>
+        <div class="tier-sev">BLOCKER</div>
+        <div class="tier-name en">Pre-Merge Deployment Block</div>
+        <div class="tier-name pt">Bloqueio de Deploy Pré-Merge</div>
+        <div class="tier-channel en">→ CI/CD Pipeline</div>
+        <div class="tier-channel pt">→ Pipeline CI/CD</div>
+        <p class="tier-desc en">Pipeline automatically blocked. Developer receives specific failing requirement, evidence, and proposed remediation. No deployment until gap is closed or formal exception granted.</p>
+        <p class="tier-desc pt">Pipeline bloqueado automaticamente. O desenvolvedor recebe o requisito específico que falhou, evidência e remediação proposta. Sem deploy até a lacuna ser fechada ou exceção formal concedida.</p>
+      </div>
+      <div class="tier-card t2">
+        <div class="tier-label en">Tier 2 · Incident Management</div>
+        <div class="tier-label pt">Tier 2 · Gestão de Incidentes</div>
+        <div class="tier-sev">HIGH</div>
+        <div class="tier-name en">Automatic Incident Creation</div>
+        <div class="tier-name pt">Criação Automática de Incidente</div>
+        <div class="tier-channel en">→ Incident Management Platform</div>
+        <div class="tier-channel pt">→ Plataforma de Gestão de Incidentes</div>
+        <p class="tier-desc en">Active risk in production triggers automatic incident creation, assigned and classified per the application's ASP. Same urgency as a production outage — detection becomes response without manual triage.</p>
+        <p class="tier-desc pt">Risco ativo em produção dispara criação automática de incidente, atribuído e classificado conforme o ASP da aplicação. Mesma urgência de uma interrupção de produção — detecção torna-se resposta sem triagem manual.</p>
+      </div>
+      <div class="tier-card t3">
+        <div class="tier-label en">Tier 3 · Squad Backlog</div>
+        <div class="tier-label pt">Tier 3 · Backlog da Squad</div>
+        <div class="tier-sev">MEDIUM</div>
+        <div class="tier-name en">Tracked Backlog Item</div>
+        <div class="tier-name pt">Item Rastreado no Backlog</div>
+        <div class="tier-channel en">→ Squad Backlog / Issue Tracker</div>
+        <div class="tier-channel pt">→ Backlog da Squad / Issue Tracker</div>
+        <p class="tier-desc en">Ticket with requirement detail, finding evidence, risk rationale, and proposed fix. SLAs: 72h acknowledgment, 2 weeks plan, 1 sprint resolution. Escalation triggered when SLA is exceeded.</p>
+        <p class="tier-desc pt">Ticket com detalhe do requisito, evidência do achado, justificativa de risco e fix proposto. SLAs: 72h de reconhecimento, 2 semanas de plano, 1 sprint de resolução. Escalonamento acionado quando o SLA é excedido.</p>
+      </div>
+      <div class="tier-card t4">
+        <div class="tier-label en">Tier 4 · Architecture Committee</div>
+        <div class="tier-label pt">Tier 4 · Comitê de Arquitetura</div>
+        <div class="tier-sev">STRUCTURAL</div>
+        <div class="tier-name en">Governance Forum Escalation</div>
+        <div class="tier-name pt">Escalonamento para Fórum de Governança</div>
+        <div class="tier-channel en">→ Architecture / Risk Committee</div>
+        <div class="tier-channel pt">→ Comitê de Arquitetura / Risco</div>
+        <p class="tier-desc en">Systemic gaps beyond squad capacity — missing platform capability, policy gaps requiring executive resource allocation — escalated with a structured briefing: technical finding, business risk, remediation options.</p>
+        <p class="tier-desc pt">Lacunas sistêmicas além da capacidade da squad — capacidade de plataforma ausente, lacunas de política que exigem alocação executiva de recursos — escalonadas com briefing estruturado: achado técnico, risco de negócio, opções de remediação.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="inner">
+    <div class="section-label en">Implementation</div>
+    <div class="section-label pt">Implementação</div>
+    <h2 class="en">Three-Phase Adoption Roadmap</h2>
+    <h2 class="pt">Roadmap de Adoção em Três Fases</h2>
+    <p class="lead en">Implementing the LSA framework is as much an organizational challenge as a technical one. This phased approach provides a structured path from pilot to portfolio.</p>
+    <p class="lead pt">Implementar o framework LSA é tanto um desafio organizacional quanto técnico. Esta abordagem faseada fornece um caminho estruturado do piloto ao portfólio.</p>
+    <div class="phases fade">
+      <div class="phase ph1">
+        <div class="phase-period en">Phase 1 · Months 1–3</div>
+        <div class="phase-period pt">Fase 1 · Meses 1–3</div>
+        <div class="phase-name en">Foundation</div>
+        <div class="phase-name pt">Fundação</div>
+        <ul class="phase-steps">
+          <li class="en">Select 3–5 pilot applications with modern CI/CD pipelines, IaC coverage, and API specs.</li>
+          <li class="pt">Selecionar 3–5 aplicações piloto com pipelines CI/CD modernos, cobertura IaC e specs de API.</li>
+          <li class="en">Build initial ASP schema and populate manually for pilots to establish baseline accuracy.</li>
+          <li class="pt">Construir schema inicial do ASP e preencher manualmente para pilotos a fim de estabelecer precisão de baseline.</li>
+          <li class="en">Define initial RGE mapping rules covering the highest-impact characteristic-to-requirement mappings.</li>
+          <li class="pt">Definir regras de mapeamento iniciais da RGE cobrindo os mapeamentos de maior impacto de característica-para-requisito.</li>
+          <li class="en">Integrate ASP signal parsing into the existing CI/CD pipeline for pilot applications.</li>
+          <li class="pt">Integrar parsing de sinais do ASP ao pipeline CI/CD existente para as aplicações piloto.</li>
+        </ul>
+      </div>
+      <div class="phase ph2">
+        <div class="phase-period en">Phase 2 · Months 4–6</div>
+        <div class="phase-period pt">Fase 2 · Meses 4–6</div>
+        <div class="phase-name en">Automation</div>
+        <div class="phase-name pt">Automação</div>
+        <ul class="phase-steps">
+          <li class="en">Deploy AI-driven ASP updates for pilots, validating accuracy against manual baseline.</li>
+          <li class="pt">Implantar atualizações do ASP orientadas por IA para pilotos, validando precisão contra baseline manual.</li>
+          <li class="en">Activate RGE for automated requirement generation; establish feedback mechanism with squads.</li>
+          <li class="pt">Ativar RGE para geração automatizada de requisitos; estabelecer mecanismo de feedback com squads.</li>
+          <li class="en">Build initial threat knowledge base; deploy incremental threat modeling for pilots.</li>
+          <li class="pt">Construir base de conhecimento inicial de ameaças; implantar modelagem incremental de ameaças para pilotos.</li>
+          <li class="en">Implement Tier 1 (pipeline block) and Tier 3 (squad tickets) for high-confidence findings only.</li>
+          <li class="pt">Implementar Tier 1 (bloqueio de pipeline) e Tier 3 (tickets de squad) apenas para achados de alta confiança.</li>
+        </ul>
+      </div>
+      <div class="phase ph3">
+        <div class="phase-period en">Phase 3 · Months 7–12</div>
+        <div class="phase-period pt">Fase 3 · Meses 7–12</div>
+        <div class="phase-name en">Scale</div>
+        <div class="phase-name pt">Escala</div>
+        <ul class="phase-steps">
+          <li class="en">Expand to full application portfolio based on pilot learnings and calibrated thresholds.</li>
+          <li class="pt">Expandir para o portfólio completo de aplicações com base nos aprendizados dos pilotos e limiares calibrados.</li>
+          <li class="en">Activate all four escalation tiers with calibrated severity thresholds reflecting organizational risk appetite.</li>
+          <li class="pt">Ativar todos os quatro tiers de escalonamento com limiares de severidade calibrados refletindo o apetite de risco organizacional.</li>
+          <li class="en">Deploy three-layer verification (static, dynamic, posture) integrated with AI orchestration layer.</li>
+          <li class="pt">Implantar verificação em três camadas (estática, dinâmica, postura) integrada com a camada de orquestração de IA.</li>
+          <li class="en">Establish governance metrics and reporting dashboards.</li>
+          <li class="pt">Estabelecer métricas de governança e dashboards de reporting.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METRICS -->
+<section id="metrics">
+  <div class="inner">
+    <div class="section-label en">Governance Metrics</div>
+    <div class="section-label pt">Métricas de Governança</div>
+    <h2 class="en">Measuring Actual Exposure Reduction</h2>
+    <h2 class="pt">Medindo a Redução de Exposição Real</h2>
+    <p class="lead en">The operational question is not how many risks were detected — it is how many detected risks resulted in a change that reduced actual exposure.</p>
+    <p class="lead pt">A pergunta operacional não é quantos riscos foram detectados — é quantos riscos detectados resultaram em uma mudança que reduziu a exposição real.</p>
+    <div class="table-wrap fade">
+      <table class="metrics-table">
+        <thead><tr>
+          <th class="en">Metric</th>            <th class="pt">Métrica</th>
+          <th class="en">Type</th>              <th class="pt">Tipo</th>
+          <th class="en">Target</th>            <th class="pt">Meta</th>
+          <th class="en">Source</th>            <th class="pt">Fonte</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="en">ASP Accuracy Rate</td><td class="pt">Taxa de Precisão do ASP</td>
+            <td><span class="m-type m-leading">Leading</span></td>
+            <td class="en">&gt; 95% vs. manual audit</td><td class="pt">&gt; 95% vs. auditoria manual</td>
+            <td class="en">Quarterly ASP audit</td><td class="pt">Auditoria trimestral do ASP</td>
+          </tr>
+          <tr>
+            <td class="en">Requirement Coverage</td><td class="pt">Cobertura de Requisitos</td>
+            <td><span class="m-type m-leading">Leading</span></td>
+            <td class="en">&gt; 90% apps with current baseline</td><td class="pt">&gt; 90% das apps com baseline atual</td>
+            <td class="en">RGE output tracking</td><td class="pt">Rastreamento de output da RGE</td>
+          </tr>
+          <tr>
+            <td class="en">Threat Model Currency</td><td class="pt">Atualidade do Modelo de Ameaças</td>
+            <td><span class="m-type m-leading">Leading</span></td>
+            <td class="en">&lt; 48h lag after characteristic change</td><td class="pt">&lt; 48h de lag após mudança de característica</td>
+            <td class="en">Threat engine telemetry</td><td class="pt">Telemetria do engine de ameaças</td>
+          </tr>
+          <tr>
+            <td class="en">Gap Resolution Rate</td><td class="pt">Taxa de Resolução de Lacunas</td>
+            <td><span class="m-type m-lagging">Lagging</span></td>
+            <td class="en">&gt; 80% Tier 3 gaps resolved within SLA</td><td class="pt">&gt; 80% das lacunas Tier 3 resolvidas no SLA</td>
+            <td class="en">Issue tracker</td><td class="pt">Issue tracker</td>
+          </tr>
+          <tr>
+            <td class="en">False Positive Rate</td><td class="pt">Taxa de Falsos Positivos</td>
+            <td><span class="m-type m-calibr">Calibration</span></td>
+            <td class="en">&lt; 15% escalated findings contested</td><td class="pt">&lt; 15% dos achados escalonados contestados</td>
+            <td class="en">Feedback mechanism</td><td class="pt">Mecanismo de feedback</td>
+          </tr>
+          <tr>
+            <td class="en">Mean Time to Remediation</td><td class="pt">Tempo Médio de Remediação</td>
+            <td><span class="m-type m-lagging">Lagging</span></td>
+            <td class="en">Decreasing quarter-over-quarter</td><td class="pt">Decrescente trimestre a trimestre</td>
+            <td class="en">Incident + ticket data</td><td class="pt">Dados de incidentes + tickets</td>
+          </tr>
+          <tr>
+            <td class="en">Incidents from Drift</td><td class="pt">Incidentes por Drift</td>
+            <td><span class="m-type m-lagging">Lagging</span></td>
+            <td class="en">Decreasing quarter-over-quarter</td><td class="pt">Decrescente trimestre a trimestre</td>
+            <td class="en">Post-mortem analysis</td><td class="pt">Análise de post-mortem</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECT ROLE -->
+<section id="architect">
+  <div class="inner">
+    <div class="section-label en">The Architect's Role</div>
+    <div class="section-label pt">O Papel do Arquiteto</div>
+    <h2 class="en">From Reviewer to System Designer</h2>
+    <h2 class="pt">De Revisor a Designer de Sistemas</h2>
+    <p class="lead en">The framework does not reduce the need for security architects. It redefines what they do — and what they deliver.</p>
+    <p class="lead pt">O framework não reduz a necessidade de arquitetos de segurança. Ele redefine o que eles fazem — e o que entregam.</p>
+    <div class="compare">
+      <div class="compare-col before fade">
+        <div class="compare-head"><div class="compare-title before en">Traditional Model</div><div class="compare-title before pt">Modelo Tradicional</div></div>
+        <ul class="compare-list">
+          <li class="en">Subject matter expert applied to discrete engagements</li><li class="pt">Especialista no assunto aplicado a engajamentos discretos</li>
+          <li class="en">Value bounded by number of reviews conducted</li><li class="pt">Valor limitado pelo número de revisões conduzidas</li>
+          <li class="en">Primarily reactive — responding to review requests</li><li class="pt">Primariamente reativo — respondendo a solicitações de revisão</li>
+          <li class="en">Influence diminishes after engagement ends</li><li class="pt">Influência diminui após o fim do engajamento</li>
+          <li class="en">Deliverables: threat model documents, control spreadsheets</li><li class="pt">Entregáveis: docs de modelo de ameaças, planilhas de controle</li>
+        </ul>
+      </div>
+      <div class="compare-col after fade">
+        <div class="compare-head"><div class="compare-title after en">Living Architecture Model</div><div class="compare-title after pt">Modelo de Arquitetura Viva</div></div>
+        <ul class="compare-list">
+          <li class="en">Designer and operator of a continuous governance system</li><li class="pt">Designer e operador de um sistema de governança contínua</li>
+          <li class="en">Impact is multiplicative: judgment encoded into automation at scale</li><li class="pt">Impacto é multiplicativo: julgamento codificado em automação em escala</li>
+          <li class="en">Primarily proactive — defining classification, mapping, and escalation logic</li><li class="pt">Primariamente proativo — definindo lógica de classificação, mapeamento e escalonamento</li>
+          <li class="en">Artifacts compound over time, improve with use, maintain relevance</li><li class="pt">Artefatos acumulam ao longo do tempo, melhoram com o uso, mantêm relevância</li>
+          <li class="en">Deliverables: classification engines, rule sets, knowledge bases, verification signatures</li><li class="pt">Entregáveis: engines de classificação, conjuntos de regras, bases de conhecimento, assinaturas de verificação</li>
+        </ul>
+      </div>
+    </div>
+    <div class="comp-grid fade">
+      <div class="comp-card"><div class="comp-name en">Systems Thinking</div><div class="comp-name pt">Pensamento Sistêmico</div><p class="comp-desc en">Design feedback loops, manage emergent behavior, reason about interactions between components of a complex system.</p><p class="comp-desc pt">Projetar loops de feedback, gerenciar comportamento emergente, raciocinar sobre interações entre componentes de um sistema complexo.</p></div>
+      <div class="comp-card"><div class="comp-name en">AI Literacy</div><div class="comp-name pt">Literacia em IA</div><p class="comp-desc en">Working understanding of AI capabilities and limitations, output evaluation, and human oversight mechanism design.</p><p class="comp-desc pt">Compreensão funcional das capacidades e limitações de IA, avaliação de outputs e design de mecanismos de supervisão humana.</p></div>
+      <div class="comp-card"><div class="comp-name en">Governance Design</div><div class="comp-name pt">Design de Governança</div><p class="comp-desc en">Translate technical risk signals into governance language and governance requirements into technical thresholds.</p><p class="comp-desc pt">Traduzir sinais de risco técnico em linguagem de governança e requisitos de governança em limiares técnicos.</p></div>
+      <div class="comp-card"><div class="comp-name en">Iterative Calibration</div><div class="comp-name pt">Calibração Iterativa</div><p class="comp-desc en">Comfort with imperfect initial outputs and patient, evidence-based refinement over time.</p><p class="comp-desc pt">Conforto com outputs iniciais imperfeitos e refinamento paciente e baseado em evidências ao longo do tempo.</p></div>
+    </div>
+    <blockquote class="fade">
+      <p class="en">"An architect who reviews code, reads postmortems, and participates in incident response has calibrated intuition about what risks are real. An architect who primarily manages rule sets and reads dashboards may have technically superior coverage but substantively inferior judgment. The living architecture should amplify the architect's judgment — not replace it. Maintaining ground-level engagement with real risk is not optional. It is how the architect keeps the system honest."</p>
+      <p class="pt">"Um arquiteto que revisa código, lê postmortems e participa de resposta a incidentes tem intuição calibrada sobre quais riscos são reais. Um arquiteto que gerencia primariamente conjuntos de regras e lê dashboards pode ter cobertura tecnicamente superior, mas julgamento substancialmente inferior. A arquitetura viva deve amplificar o julgamento do arquiteto — não substituí-lo. Manter engajamento no nível do terreno com o risco real não é opcional. É como o arquiteto mantém o sistema honesto."</p>
+      <footer>— Yuri Braz, The Living Security Architecture, v1.0 (2026)</footer>
+    </blockquote>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="inner">
+    <div class="section-label en">About the Author</div>
+    <div class="section-label pt">Sobre o Autor</div>
+    <div class="about-layout">
+      <div class="avatar">🛡</div>
+      <div>
+        <div class="about-name">Yuri Braz</div>
+        <div class="about-role en">CISSP · CRISC · CYBERSECURITY SPECIALIST · GROUP PRODUCT MANAGER · ITAÚ UNIBANCO · ISC² SME</div>
+        <div class="about-role pt">CISSP · CRISC · ESPECIALISTA EM CIBERSEGURANÇA · GROUP PRODUCT MANAGER · ITAÚ UNIBANCO · ISC² SME</div>
+        <p class="about-bio en">Cybersecurity professional with over 15 years of experience in regulated financial environments. Leads the Pipeline Security squad at Itaú Unibanco — one of Brazil's largest financial institutions — focused on automated IAM governance across multi-cloud environments (AWS, GCP, Azure, Oracle, Huawei). Has strategically led AppSec (SAST/DAST, Threat Modeling, SCA, CI/CD), Cloud Security (Policy as Code, CSPM Prisma Cloud), and Infrastructure Security (Vulnerability Management, CTEM, BAS Cymulate) squads, operating under BCB Resolution 4.893, LGPD, and ISO 27001.</p>
+        <p class="about-bio pt">Profissional de cibersegurança com mais de 15 anos de experiência em ambientes financeiros regulados. Lidera a squad de Pipeline Security no Itaú Unibanco — uma das maiores instituições financeiras do Brasil — com foco em governança automatizada de IAM em ambientes multicloud (AWS, GCP, Azure, Oracle, Huawei). Liderou estrategicamente squads de AppSec (SAST/DAST, Threat Modeling, SCA, CI/CD), Cloud Security (Policy as Code, CSPM Prisma Cloud) e Segurança de Infraestrutura (Gestão de Vulnerabilidades, CTEM, BAS Cymulate), operando sob Resolução BCB 4.893, LGPD e ISO 27001.</p>
+        <p class="about-bio en" style="margin-top:-.5rem;">Subject Matter Expert for ISC², contributing to global certification content including the CISSP Body of Knowledge. Recently completed a postgraduate program in Machine Learning Engineering (FIAP, 2024–2025). The framework presented here is grounded in direct operational experience — a practitioner's lens.</p>
+        <p class="about-bio pt" style="margin-top:-.5rem;">Subject Matter Expert pela ISC², contribuindo para conteúdo de certificações globais incluindo o CISSP Body of Knowledge. Concluiu recentemente pós-graduação em Machine Learning Engineering (FIAP, 2024–2025). O framework aqui apresentado é fundamentado em experiência operacional direta — um olhar de practitioner.</p>
+        <div class="certs">
+          <span class="cert">CISSP</span><span class="cert">CRISC</span><span class="cert">PMP</span>
+          <span class="cert">ML Engineering · FIAP</span><span class="cert">ISC² SME · CISSP CBK</span>
+          <span class="cert">AWS · GCP · Azure · Oracle</span>
+          <span class="cert">DevSecOps</span><span class="cert">Zero Trust · NIST 800-207</span>
+          <span class="cert">CSPM · Prisma Cloud</span><span class="cert">MITRE ATT&amp;CK</span>
+        </div>
+        <div class="about-links">
+          <a href="https://www.linkedin.com/feed/" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </a>
+          <a href="mailto:ybraz@proton.me" class="btn btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            ybraz@proton.me
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</div><!-- /wrap -->
+
+<footer>
+  <p class="footer-txt en">© 2026 Yuri Braz &nbsp;·&nbsp; <em>The Living Security Architecture</em> &nbsp;·&nbsp; Framework Specification v1.0 · April 2026 &nbsp;·&nbsp; <a href="mailto:ybraz@proton.me">ybraz@proton.me</a></p>
+  <p class="footer-txt pt">© 2026 Yuri Braz &nbsp;·&nbsp; <em>The Living Security Architecture</em> &nbsp;·&nbsp; Especificação do Framework v1.0 · Abril 2026 &nbsp;·&nbsp; <a href="mailto:ybraz@proton.me">ybraz@proton.me</a></p>
+</footer>
+
+<script>
+// CANVAS
+const c = document.getElementById('bg-canvas');
+const x = c.getContext('2d');
+let W, H, pts = [];
+function resize() { W = c.width = innerWidth; H = c.height = innerHeight; }
+function init() {
+  pts = [];
+  const n = Math.floor(W * H / 22000);
+  for (let i = 0; i < n; i++) pts.push({ x: Math.random()*W, y: Math.random()*H, vx: (Math.random()-.5)*.25, vy: (Math.random()-.5)*.25, r: Math.random()*1.2+.4 });
+}
+function draw() {
+  x.clearRect(0,0,W,H);
+  pts.forEach((p,i) => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x<0||p.x>W) p.vx*=-1;
+    if (p.y<0||p.y>H) p.vy*=-1;
+    x.beginPath(); x.arc(p.x,p.y,p.r,0,Math.PI*2);
+    x.fillStyle='rgba(46,155,255,.6)'; x.fill();
+    for (let j=i+1;j<pts.length;j++) {
+      const q=pts[j], dx=p.x-q.x, dy=p.y-q.y, d=Math.sqrt(dx*dx+dy*dy);
+      if (d<120) { x.beginPath(); x.moveTo(p.x,p.y); x.lineTo(q.x,q.y); x.strokeStyle=`rgba(46,155,255,${(1-d/120)*.1})`; x.lineWidth=.5; x.stroke(); }
+    }
+  });
+  requestAnimationFrame(draw);
+}
+resize(); init(); draw();
+window.addEventListener('resize', ()=>{ resize(); init(); });
+
+// PROGRESS
+const prog = document.getElementById('prog');
+window.addEventListener('scroll', () => {
+  prog.style.width = (scrollY / (document.body.scrollHeight - innerHeight) * 100) + '%';
+});
+
+// LANG
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.documentElement.setAttribute('data-lang', b.dataset.l);
+    document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  });
+});
+
+// SCROLL REVEAL
+const obs = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 70);
+  });
+}, { threshold: 0.07 });
+document.querySelectorAll('.fade').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
