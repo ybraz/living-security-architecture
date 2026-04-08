@@ -4,7 +4,7 @@
 
 Static threat models, point-in-time compliance assessments, and fixed control catalogs share a common flaw: they are accurate on the day they are written and increasingly inaccurate with every sprint thereafter. The Living Security Architecture (LSA) addresses this by treating security not as a governance artifact but as a continuously evolving engineering system.
 
-→ **[View the framework](https://ybraz.github.io/living-security-architecture/)**
+→ **[View the framework](https://code.ybraz.com/living-security-architecture/)**
 
 ---
 
