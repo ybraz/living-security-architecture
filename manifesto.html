@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" class="lang-en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Living Architecture Manifesto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;1,300&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg:           #080B14;
+      --bg-surface:   #0D1120;
+      --text:         #D8DCE8;
+      --text-dim:     #6B7494;
+      --text-muted:   #3A4260;
+      --accent:       #3A7BD5;
+      --accent-dim:   #1E3F70;
+      --rule:         #151B2E;
+      --serif:        'Source Serif 4', Georgia, serif;
+      --display:      'Playfair Display', Georgia, serif;
+      --mono:         'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Language switching ── */
+
+    .lang-en .pt { display: none; }
+    .lang-pt .en { display: none; }
+
+    /* ── Layout ── */
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ── Language toggle ── */
+
+    .lang-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 24px 0 0;
+    }
+
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--bg-surface);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .lang-btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .lang-btn:hover {
+      color: var(--text-dim);
+    }
+
+    .lang-btn.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .lang-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--rule);
+      flex-shrink: 0;
+    }
+
+    /* ── Header ── */
+
+    header {
+      padding: 56px 0 72px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .kicker {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 400;
+      line-height: 1.1;
+      color: #F0F2F8;
+      letter-spacing: -0.02em;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .tagline {
+      margin-top: 24px;
+      font-size: 16px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* ── Hero Image ── */
+
+    .hero-image {
+      margin: 64px 0;
+    }
+
+    .image-placeholder {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .image-placeholder::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--rule) 1px, transparent 1px),
+        linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .image-placeholder-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+
+    .image-placeholder-sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      opacity: 0.5;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Replace placeholder with:
+       <img src="drift.png" alt="..." class="hero-img" /> */
+    .hero-img {
+      width: 100%;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .image-caption {
+      margin-top: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Sections ── */
+
+    section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    h2 {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 40px;
+    }
+
+    p {
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+
+    p:last-child { margin-bottom: 0; }
+
+    p strong {
+      font-weight: 400;
+      color: #F0F2F8;
+    }
+
+    /* ── Preamble ── */
+
+    .preamble-opener {
+      font-family: var(--display);
+      font-size: clamp(22px, 3.5vw, 28px);
+      font-weight: 400;
+      font-style: italic;
+      line-height: 1.35;
+      color: #F0F2F8;
+      margin-bottom: 40px;
+    }
+
+    /* ── Values ── */
+
+    .values-intro {
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 40px;
+    }
+
+    .value-list {
+      list-style: none;
+    }
+
+    .value-item {
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .value-item:last-child {
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .value-primary {
+      font-family: var(--display);
+      font-size: clamp(18px, 2.5vw, 22px);
+      font-weight: 600;
+      color: #F0F2F8;
+      line-height: 1.25;
+    }
+
+    .value-over {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 10px 0 6px;
+    }
+
+    .value-secondary {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text-dim);
+    }
+
+    .values-note {
+      margin-top: 36px;
+      font-size: 15px;
+      font-style: italic;
+      color: var(--text-dim);
+    }
+
+    /* ── Principles ── */
+
+    .principle-list { list-style: none; }
+
+    .principle-item {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0 24px;
+      padding: 28px 0;
+      border-top: 1px solid var(--rule);
+      align-items: start;
+    }
+
+    .principle-item:last-child {
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .principle-number {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--accent-dim);
+      padding-top: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .principle-text {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .principle-text em {
+      font-style: normal;
+      color: #F0F2F8;
+    }
+
+    /* ── Closing ── */
+
+    .closing {
+      padding: 80px 0;
+    }
+
+    .closing-text {
+      font-family: var(--display);
+      font-size: clamp(17px, 2.5vw, 21px);
+      font-weight: 400;
+      font-style: italic;
+      line-height: 1.5;
+      color: var(--text-dim);
+      max-width: 640px;
+      margin: 0;
+    }
+
+    .closing-text strong {
+      color: #F0F2F8;
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* ── Footer ── */
+
+    footer {
+      padding: 48px 0 80px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .footer-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Responsive ── */
+
+    @media (max-width: 600px) {
+      .page { padding: 0 20px; }
+      header { padding: 40px 0 48px; }
+      section { padding: 56px 0; }
+      .principle-item {
+        grid-template-columns: 36px 1fr;
+        gap: 0 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- Language bar -->
+    <div class="lang-bar">
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+        <div class="lang-divider"></div>
+        <button class="lang-btn" id="btn-pt" onclick="setLang('pt')">PT</button>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <p class="kicker">
+        <span class="en">A Manifesto</span>
+        <span class="pt">Um Manifesto</span>
+      </p>
+      <h1>The <em>Living</em><br>Architecture</h1>
+      <p class="tagline">
+        <span class="en">On what it means to govern systems that do not hold still.</span>
+        <span class="pt">Sobre o que significa governar sistemas que não ficam parados.</span>
+      </p>
+    </header>
+
+    <!-- Hero Image -->
+    <div class="hero-image">
+      <!--
+        TO PLACE THE FINAL IMAGE:
+        Replace the .image-placeholder div below with:
+        <img src="drift.png" alt="Drift" class="hero-img" />
+      -->
+      <div class="image-placeholder">
+        <span class="image-placeholder-label">Image placeholder</span>
+        <span class="image-placeholder-sub"><img src="drift.png" alt="Drift" class="hero-img" /></span>
+      </div>
+      <p class="image-caption">
+        <span class="en">Fig. 1 — Drift. The distance between designed intent and operational reality, accumulated across every change that was not treated as an architectural event.</span>
+        <span class="pt">Fig. 1 — Drift. A distância entre a intenção do design e a realidade operacional, acumulada a cada mudança que não foi tratada como um evento arquitetural.</span>
+      </p>
+    </div>
+
+    <!-- Preamble -->
+    <section id="preamble">
+      <h2>
+        <span class="en">Preamble</span>
+        <span class="pt">Preâmbulo</span>
+      </h2>
+
+      <p class="preamble-opener en">Architecture was designed for systems that hold still.</p>
+      <p class="preamble-opener pt">A arquitetura foi concebida para sistemas que ficam parados.</p>
+
+      <p class="en">A solution architect would model the problem, define the components, document the interfaces, and publish the design. The system would be built to match it. The architecture would persist as a reference — reviewed periodically, updated occasionally, consulted when something broke.</p>
+      <p class="pt">Um arquiteto de soluções modelaria o problema, definiria os componentes, documentaria as interfaces e publicaria o design. O sistema seria construído para corresponder a ele. A arquitetura persistiria como referência — revisada periodicamente, atualizada ocasionalmente, consultada quando algo quebrasse.</p>
+
+      <p class="en">This model assumed that the distance between a system as designed and a system as running could be managed through deliberate, scheduled intervention. It assumed that the architectural intent embedded in a document at sprint zero would remain legible in the system running twelve months later.</p>
+      <p class="pt">Esse modelo pressupunha que a distância entre um sistema como projetado e um sistema em execução poderia ser gerenciada por meio de intervenção deliberada e programada. Pressupunha que a intenção arquitetural incorporada em um documento no sprint zero permaneceria legível no sistema em execução doze meses depois.</p>
+
+      <p class="en"><strong>Neither assumption holds anymore.</strong></p>
+      <p class="pt"><strong>Nenhuma dessas premissas vale mais.</strong></p>
+
+      <p class="en">Modern systems evolve in production — continuously, through automated pipelines, composed dependencies, distributed teams, and adversarial environments that do not wait for the next review cycle. The architectural artifact ages from the moment it is published. The distance between designed intent and operational reality grows with every change that is not treated as an architectural event.</p>
+      <p class="pt">Sistemas modernos evoluem em produção — continuamente, por meio de pipelines automatizados, dependências compostas, times distribuídos e ambientes adversariais que não esperam pelo próximo ciclo de revisão. O artefato arquitetural envelhece no momento em que é publicado. A distância entre a intenção do design e a realidade operacional cresce a cada mudança que não é tratada como um evento arquitetural.</p>
+
+      <p class="en">This is not a process problem. It is a model problem.</p>
+      <p class="pt">Isso não é um problema de processo. É um problema de modelo.</p>
+
+      <p class="en">The traditional model treats architecture as an initial state to be preserved. The model we need treats architecture as a <strong>living state to be governed.</strong></p>
+      <p class="pt">O modelo tradicional trata a arquitetura como um estado inicial a ser preservado. O modelo que precisamos trata a arquitetura como um <strong>estado vivo a ser governado.</strong></p>
+    </section>
+
+    <!-- Values -->
+    <section id="values">
+      <h2>
+        <span class="en">Values</span>
+        <span class="pt">Valores</span>
+      </h2>
+
+      <p class="values-intro en">We have come to value:</p>
+      <p class="values-intro pt">Passamos a valorizar:</p>
+
+      <ul class="value-list">
+        <li class="value-item">
+          <span class="value-primary en">Continuous architectural posture</span>
+          <span class="value-primary pt">Postura arquitetural contínua</span>
+          <span class="value-over en">over</span>
+          <span class="value-over pt">em vez de</span>
+          <span class="value-secondary en">point-in-time design artifacts</span>
+          <span class="value-secondary pt">artefatos de design pontuais</span>
+        </li>
+        <li class="value-item">
+          <span class="value-primary en">Codified judgment</span>
+          <span class="value-primary pt">Julgamento codificado</span>
+          <span class="value-over en">over</span>
+          <span class="value-over pt">em vez de</span>
+          <span class="value-secondary en">manual review</span>
+          <span class="value-secondary pt">revisão manual</span>
+        </li>
+        <li class="value-item">
+          <span class="value-primary en">Drift detection</span>
+          <span class="value-primary pt">Detecção de drift</span>
+          <span class="value-over en">over</span>
+          <span class="value-over pt">em vez de</span>
+          <span class="value-secondary en">periodic audit</span>
+          <span class="value-secondary pt">auditoria periódica</span>
+        </li>
+        <li class="value-item">
+          <span class="value-primary en">Adaptive governance</span>
+          <span class="value-primary pt">Governança adaptativa</span>
+          <span class="value-over en">over</span>
+          <span class="value-over pt">em vez de</span>
+          <span class="value-secondary en">fixed compliance</span>
+          <span class="value-secondary pt">conformidade fixa</span>
+        </li>
+        <li class="value-item">
+          <span class="value-primary en">Composition awareness</span>
+          <span class="value-primary pt">Consciência de composição</span>
+          <span class="value-over en">over</span>
+          <span class="value-over pt">em vez de</span>
+          <span class="value-secondary en">boundary isolation</span>
+          <span class="value-secondary pt">isolamento de fronteiras</span>
+        </li>
+      </ul>
+
+      <p class="values-note en">That is, while there is value in the items on the right, we value the items on the left more.</p>
+      <p class="values-note pt">Ou seja, embora haja valor nos itens à direita, valorizamos mais os itens à esquerda.</p>
+    </section>
+
+    <!-- Principles -->
+    <section id="principles">
+      <h2>
+        <span class="en">Principles</span>
+        <span class="pt">Princípios</span>
+      </h2>
+
+      <ol class="principle-list">
+        <li class="principle-item">
+          <span class="principle-number">01</span>
+          <p class="principle-text en">An architecture that is not continuously observed is not an architecture. <em>It is a historical document.</em></p>
+          <p class="principle-text pt">Uma arquitetura que não é observada continuamente não é uma arquitetura. <em>É um documento histórico.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">02</span>
+          <p class="principle-text en"><em>Every deployment is a potential architectural event.</em> Treat it as one.</p>
+          <p class="principle-text pt"><em>Todo deployment é um potencial evento arquitetural.</em> Trate-o como tal.</p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">03</span>
+          <p class="principle-text en">The architect's judgment is most valuable <em>when it does not require the architect's presence.</em></p>
+          <p class="principle-text pt">O julgamento do arquiteto é mais valioso <em>quando não exige a presença do arquiteto.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">04</span>
+          <p class="principle-text en">The gap between intended architecture and running system is not an implementation problem. <em>It is an architecture problem.</em></p>
+          <p class="principle-text pt">A distância entre a arquitetura intencionada e o sistema em execução não é um problema de implementação. <em>É um problema de arquitetura.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">05</span>
+          <p class="principle-text en">Governance that cannot observe the system it governs is not governance. <em>It is ceremony.</em></p>
+          <p class="principle-text pt">Governança que não consegue observar o sistema que governa não é governança. <em>É cerimônia.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">06</span>
+          <p class="principle-text en">Requirements generated once and never revisited are already wrong. <em>Systems change; requirements must follow.</em></p>
+          <p class="principle-text pt">Requisitos gerados uma vez e nunca revisitados já estão errados. <em>Sistemas mudam; requisitos precisam seguir.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">07</span>
+          <p class="principle-text en">Complexity that cannot be expressed cannot be governed. <em>If you cannot model it, you cannot reason about it.</em></p>
+          <p class="principle-text pt">Complexidade que não pode ser expressa não pode ser governada. <em>Se você não consegue modelá-la, não consegue raciocinar sobre ela.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">08</span>
+          <p class="principle-text en">The value of a design decision lives not in the document that records it <em>but in the system that reflects it.</em></p>
+          <p class="principle-text pt">O valor de uma decisão de design não reside no documento que a registra, <em>mas no sistema que a reflete.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">09</span>
+          <p class="principle-text en">Threat surfaces, technical debt, and compliance gaps do not appear suddenly. <em>They accumulate — silently, across every change that was not treated as an architectural event.</em></p>
+          <p class="principle-text pt">Superfícies de ataque, dívida técnica e lacunas de conformidade não aparecem de repente. <em>Eles se acumulam — silenciosamente, a cada mudança que não foi tratada como um evento arquitetural.</em></p>
+        </li>
+        <li class="principle-item">
+          <span class="principle-number">10</span>
+          <p class="principle-text en">The role of the architect is not to review decisions one at a time. <em>It is to design the system by which decisions govern themselves.</em></p>
+          <p class="principle-text pt">O papel do arquiteto não é revisar decisões uma a uma. <em>É projetar o sistema pelo qual as decisões se governam.</em></p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Closing -->
+    <div class="closing">
+      <p class="closing-text en">Architecture was never meant to be a snapshot. It was always meant to be <strong>a commitment about how a system should behave — now, and as it changes.</strong> We have confused the document with the discipline. This manifesto is a call to recover the discipline.</p>
+      <p class="closing-text pt">A arquitetura nunca foi pensada para ser um snapshot. Sempre foi <strong>uma afirmação sobre como um sistema deve se comportar — agora e conforme ele muda.</strong> Confundimos o documento com a disciplina. Este manifesto é um chamado para recuperar a disciplina.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p class="footer-text">thelivingarchitecture.io &nbsp;·&nbsp; 2026</p>
+    </footer>
+
+  </div>
+
+  <script>
+    function setLang(lang) {
+      const html = document.documentElement;
+      html.classList.remove('lang-en', 'lang-pt');
+      html.classList.add('lang-' + lang);
+      html.lang = lang;
+
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      document.getElementById('btn-pt').classList.toggle('active', lang === 'pt');
+
+      try { localStorage.setItem('manifesto-lang', lang); } catch(e) {}
+    }
+
+    // Restore last selected language
+    (function() {
+      try {
+        const saved = localStorage.getItem('manifesto-lang');
+        if (saved === 'pt') setLang('pt');
+      } catch(e) {}
+    })();
+  </script>
+</body>
+</html>
