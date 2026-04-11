@@ -1,5 +1,4 @@
-# The Living Security Architecture
-### AI-Driven Dynamic Risk Governance Framework for Continuously Evolving Applications
+# The Living Security Architecture - AppSec Framework for Continuous Delivery Environments
 
 **Framework Specification Document — Version 1.0, April 2026**
 
@@ -38,6 +37,8 @@ The consequences are well documented: security incidents traced to post-architec
 | Verification Gap | Existing tools (SAST, DAST, SCA, CSPM) detect vulnerabilities independently but lack integration to verify whether specific security requirements are satisfied. |
 | Reactive Governance | Manual escalation chains depend on the persistence of the security team rather than the institutional velocity of the organization. |
 
+![The Architecture Drift — security posture as designed vs. as deployed over time](<imgs/Illustration 1 - Section 2 - The Architecture Drift.png>)
+
 ## 3. Framework Architecture Overview
 
 The Living Security Architecture operates through four interdependent layers, each building on the outputs of the preceding one. Together, they form a continuous feedback loop in which application characteristics, security requirements, threat assessments, and compliance verification co-evolve with the application itself.
@@ -48,6 +49,8 @@ The Living Security Architecture operates through four interdependent layers, ea
 | L2 | Requirement Generation Engine (RGE) | Translates ASP state changes into incremental, versioned control requirements. | Authors the mapping rules encoding security intent; manages exceptions. |
 | L3 | Continuous Threat Modeling Engine | Maintains a structured, versioned threat model updated incrementally from code diffs, IaC, dependencies, and intelligence feeds. | Curates threat knowledge base; calibrates relevance; resolves ambiguities. |
 | L4 | Verification & Governance | Verifies requirements across static, dynamic, and posture layers; mobilizes escalation through four tiers. | Defines verification signatures and escalation logic; calibrates thresholds. |
+
+![Living Security Architecture — four-layer continuous feedback loop](<imgs/Illustration 2 - Section 3 - Framework Architecture Overview (Main Diagram).png>)
 
 > Each layer produces versioned, machine-readable artifacts that serve as inputs to the next. The ASP feeds the RGE, the RGE and the threat model co-evolve bidirectionally, and the verification layer checks the combined output against actual application state.
 
@@ -66,6 +69,8 @@ The ASP captures five dimensions that collectively encompass the risk-relevant c
 | Authentication & Authorization | How users and services authenticate and how access boundaries are enforced. Changes here alter trust models fundamentally. | Auth middleware, OAuth configs, RBAC/ABAC policies, service mesh config. |
 | External Integrations | Third-party services, partner APIs, external data sources. Each integration is an implicit trust decision. | Dependency manifests, API client configs, webhook registrations. |
 | Deployment Posture | Runtime environment: cloud provider, container orchestration, network segmentation, IAM bindings. | Terraform/Helm/Bicep files, K8s manifests, cloud resource tags. |
+
+![Application Security Profile — five risk dimensions and their signal sources](<imgs/Illustration 3 - Section 4.1 - ASP Dimensions.png>)
 
 ### 4.2 Signal Processing Model
 
@@ -133,6 +138,8 @@ The continuous threat modeling engine replaces the traditional point-in-time thr
 | Threat Intelligence | New CVEs, active exploit campaigns, threat actor TTPs relevant to the application’s technology stack. | Continuous feed |
 | Runtime Behavioral Signals | Anomalous API call patterns, unusual data access, configuration drift from declared baseline. | Real-time monitoring |
 
+![Continuous Threat Modeling Engine — five input streams and bidirectional output](<imgs/Illustration 4 - Section 6 - Threat Modeling Engine — Input Streams.png>)
+
 ### 6.2 Bidirectional Relationship with RGE
 
 The threat model and the RGE operate in a bidirectional feedback loop. New threats identified that are not covered by existing control requirements trigger the addition of new requirements. Threats retired because the enabling attack surface has been removed cause associated requirements to be flagged for review. This ensures that the control requirement set remains grounded in actual risk rather than abstract policy.
@@ -155,6 +162,8 @@ A critical distinction underlies this layer: vulnerability detection and require
 | Dynamic | Application behavior at runtime in staging and production. | DAST, API contract testing, RASP, behavioral monitoring. | Pattern recognition at scale across millions of runtime events; anomaly detection against behavioral baselines. |
 | Posture | Cloud and infrastructure configuration in deployed state. | CSPM (Prisma Cloud, Wiz), cloud-native config assessment. | Integrates ASP context into CSPM findings; assesses posture against application-specific requirements, not generic policies. |
 
+![Three-Layer Verification Architecture — static, dynamic, and posture layers with AI orchestration](<imgs/Illustration 5 - Section 7.1 - Three-Layer Verification Architecture.png>)
+
 > AI’s role in this layer is not detection - existing tools already perform detection. Its role is routing, correlation, and interpretation: determining where each requirement should be verified, aggregating findings, filtering noise, and surfacing residual gaps as requirement violations with traceable evidence.
 
 ### 7.2 Four-Tier Escalation Model
@@ -167,6 +176,8 @@ Detection without response is theater. The escalation model routes findings to e
 | Tier 2 | HIGH | Automatic incident creation for active risk in production. Classified per organization’s severity model. Treated with same urgency as production outage. | Incident Management Platform |
 | Tier 3 | MEDIUM | Ticket created in squad’s backlog with requirement detail, finding evidence, risk rationale, and proposed fix. Defined SLAs: 72h acknowledgment, 2 weeks plan, 1 sprint resolution. | Squad Backlog / Issue Tracker |
 | Tier 4 | STRUCTURAL | Escalation to architecture/risk committee with structured briefing: technical finding, business risk, remediation options. For gaps requiring architectural decisions beyond squad capacity. | Architecture / Risk Governance Committee |
+
+![Four-Tier Escalation Model — severity-proportional routing to existing governance channels](<imgs/Illustration 6 - Section 7.2 - Four-Tier Escalation Model.png>)
 
 #### 7.2.1 Design Principle
 
@@ -189,6 +200,8 @@ The framework does not reduce the need for security architects. It redefines wha
 | Primarily reactive: responding to review requests. | Primarily proactive: defining classification, mapping, detection, and escalation logic. |
 | Deliverables: threat model documents, control spreadsheets. | Deliverables: classification engines, rule sets, knowledge bases, verification signatures. |
 | Influence diminishes after engagement ends. | Artifacts compound over time, improve with use, maintain relevance. |
+
+![The Security Architect's Transformed Role — from point-in-time reviewer to system designer and operator](<imgs/Illustration 7 - Section 8 - The Architect's Transformed Role.png>)
 
 ### 8.2 Required Competencies
 
@@ -225,6 +238,8 @@ Implementing the LSA framework is as much an organizational challenge as a techn
 - Activate all four escalation tiers with calibrated severity thresholds reflecting organizational risk appetite.
 - Deploy three-layer verification (static, dynamic, posture) integrated with the AI orchestration layer.
 - Establish governance metrics and reporting dashboards tracking requirement coverage, gap resolution rates, and mean time to remediation.
+
+![LSA Implementation Roadmap — three phases with validation gates](<imgs/Illustration 8 - Section 9 - Implementation Roadmap.png>)
 
 ## 10. Governance Metrics
 
